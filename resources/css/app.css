@@ -1,0 +1,217 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    --font-outfit: 'Outfit', sans-serif;
+    --font-jakarta: 'Plus Jakarta Sans', sans-serif;
+}
+
+body {
+    font-family: var(--font-jakarta);
+    background-color: #f5f5f7;
+    color: #1d1d1f;
+    overflow-x: hidden;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-family: var(--font-outfit);
+}
+
+/* Premium Light / Apple-like subtle radial background */
+.app-bg-gradient {
+    background: radial-gradient(circle at 10% 20%, rgba(0, 113, 227, 0.04) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(98, 0, 234, 0.03) 0%, transparent 40%),
+        #f5f5f7;
+}
+
+/* Apple Light Glassmorphism Panels */
+.glass-panel {
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.02), 0 1px 3px rgba(0, 0, 0, 0.02);
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.glass-panel-hover:hover {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: rgba(0, 113, 227, 0.2);
+    box-shadow: 0 12px 40px rgba(0, 113, 227, 0.06), 0 2px 8px rgba(0, 0, 0, 0.04);
+    transform: translateY(-2px);
+}
+
+/* Apple Subtle Shadow Elements (removing glow) */
+.text-glow-purple {
+    color: #86198f;
+}
+
+.text-glow-cyan {
+    color: #0891b2;
+}
+
+/* Apple-style buttons (no glows, clean solid backgrounds) */
+.btn-glow-indigo {
+    position: relative;
+    overflow: hidden;
+    background: #0071e3;
+    color: #ffffff;
+    transition: all 0.2s ease;
+}
+
+.btn-glow-indigo:hover {
+    background: #0077ed;
+    transform: translateY(-0.5px);
+}
+
+.btn-glow-indigo:active {
+    background: #0062c3;
+}
+
+.btn-glow-emerald {
+    position: relative;
+    overflow: hidden;
+    background: #34c759;
+    color: #ffffff;
+    transition: all 0.2s ease;
+}
+
+.btn-glow-emerald:hover {
+    background: #30d158;
+    transform: translateY(-0.5px);
+}
+
+.btn-glow-emerald:active {
+    background: #28a745;
+}
+
+.btn-glow-rose {
+    position: relative;
+    overflow: hidden;
+    background: #ff3b30;
+    color: #ffffff;
+    transition: all 0.2s ease;
+}
+
+.btn-glow-rose:hover {
+    background: #ff453a;
+    transform: translateY(-0.5px);
+}
+
+.btn-glow-rose:active {
+    background: #dd2c22;
+}
+
+/* Animations */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-in-up {
+    animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.02);
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.3);
+}
+
+/* Wizard Stepper Styling */
+.stepper-circle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.stepper-circle.active {
+    background: #0071e3;
+    color: #ffffff;
+    border-color: transparent;
+}
+
+.stepper-circle.completed {
+    background: rgba(52, 199, 89, 0.15);
+    color: #34c759;
+    border: 1px solid #34c759;
+}
+
+.stepper-circle.upcoming {
+    background: rgba(0, 0, 0, 0.03);
+    color: #86868b;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+/* Input styles matching Apple's guidelines */
+.custom-input {
+    background: #ffffff;
+    border: 1px solid #d2d2d7;
+    color: #1d1d1f;
+    border-radius: 8px;
+    transition: all 0.15s ease-in-out;
+}
+
+.custom-input:focus {
+    border-color: #0071e3;
+    box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.15);
+    background: #ffffff;
+}
+
+/* Segmented Control / Apple-style tabs */
+.segmented-control {
+    background: rgba(0, 0, 0, 0.04);
+    padding: 2px;
+    border-radius: 8px;
+    display: flex;
+}
+
+.segmented-control-item {
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #86868b;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.segmented-control-item.active {
+    background: #ffffff;
+    color: #1d1d1f;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
