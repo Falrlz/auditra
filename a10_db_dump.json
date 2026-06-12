@@ -1,0 +1,638 @@
+{
+    "section_1": [
+        {
+            "no": 1,
+            "description": "Tujuan audit adalah untuk menyatakan suatu pendapat atas laporan keuangan.",
+            "date": null,
+            "initial": null
+        },
+        {
+            "no": 2,
+            "description": "Tanggung jawab manajemen adalah untuk: (1) Membangun dan mempertahankan pengendalian intern yang efektif untuk memastikan kehandalan laporan keuangan; Mengidentifikasi  dan  menjamin  bahwa  entitas  telah  mematuhi  peraturan perundangan yang berlaku dalam setiap aktivitasnya; (3) Membuat semua catatan keuangan dan informasi yang berkaitan tersedia bagi auditor; (4) Menyediakan  suatu  surat  bagi  auditor  yang  menegaskan  representasi tertentu yang dibuat selama audit berlangsung.",
+            "date": null,
+            "initial": null
+        },
+        {
+            "no": 3,
+            "description": "Tanggung   jawab   auditor   untuk   melaksanakan   audit   berdasarkan   standar auditing yang ditetapkan IAPI",
+            "date": null,
+            "initial": null
+        },
+        {
+            "no": 4,
+            "description": "Pengaturan mengenai pelaksanaan perikatan (sebagai contoh, waktu, bantuan klien berkaitan dengan pembuatan skedul dan penyediaan dokumen).",
+            "date": null,
+            "initial": null
+        },
+        {
+            "no": 5,
+            "description": "Pengaturan tentang keikutsertaan spesialis atau auditor intern, jika diperlukan.",
+            "date": null,
+            "initial": null
+        },
+        {
+            "no": 6,
+            "description": "Pengaturan tentang keikutsertaan auditor pendahulu.",
+            "date": null,
+            "initial": null
+        },
+        {
+            "no": 7,
+            "description": "Pengaturan tentang fee dan penagihan.",
+            "date": null,
+            "initial": null
+        },
+        {
+            "no": 8,
+            "description": "Adanya pembatasan atau pengaturan lain tentang kewajiban auditor atau klien, seperti ganti rugi kepada auditor untuk kewajiban yang timbul dari representasi salah yang dilakukan dengan sepengetahuan manajemen kepada auditor.",
+            "date": null,
+            "initial": null
+        },
+        {
+            "no": 9,
+            "description": "Kondisi yang memungkinkan pihak lain diperbolehkan untuk melakukan akses ke kertas kerja auditor.",
+            "date": null,
+            "initial": null
+        },
+        {
+            "no": 10,
+            "description": "Jasa  tambahan  yang  disediakan  oleh  auditor  berkaitan  dengan  pemenuhan persyaratan badan pengatur.",
+            "date": null,
+            "initial": null
+        }
+    ],
+    "section_2_a": {
+        "description": null,
+        "pemilik": [
+            {
+                "no": 1,
+                "nama": null,
+                "saham_saham": null,
+                "saham_persen": null,
+                "jabatan": "Tidak Menjabat"
+            },
+            {
+                "no": 2,
+                "nama": null,
+                "saham_saham": null,
+                "saham_persen": null,
+                "jabatan": "Tidak Menjabat"
+            },
+            {
+                "no": 3,
+                "nama": null,
+                "saham_saham": null,
+                "saham_persen": null,
+                "jabatan": "Tidak Menjabat"
+            },
+            {
+                "no": 4,
+                "nama": null,
+                "saham_saham": null,
+                "saham_persen": null,
+                "jabatan": "Tidak Menjabat"
+            },
+            {
+                "no": 5,
+                "nama": null,
+                "saham_saham": null,
+                "saham_persen": null,
+                "jabatan": "Tidak Menjabat"
+            }
+        ],
+        "dewan_komisaris": [
+            {
+                "jabatan": "Komisaris Utama",
+                "nama_2024": null,
+                "nama_2023": null
+            },
+            {
+                "jabatan": "Komisaris Independen",
+                "nama_2024": null,
+                "nama_2023": null
+            }
+        ],
+        "dewan_direksi": [
+            {
+                "jabatan": "Direktur Utama",
+                "nama_2024": null,
+                "nama_2023": null
+            },
+            {
+                "jabatan": "Direktur",
+                "nama_2024": null,
+                "nama_2023": null
+            },
+            {
+                "jabatan": "Direktur",
+                "nama_2024": null,
+                "nama_2023": null
+            }
+        ],
+        "address": null,
+        "revenue_sources": null,
+        "funding_sources": null
+    },
+    "section_2_b": {
+        "has_subsidiary": "Tidak",
+        "subsidiary_detail": [],
+        "related_parties": []
+    },
+    "section_2_c": "Jasa Audit Laporan keuangan tahun buku 2024",
+    "section_2_d": {
+        "nama_kap": null,
+        "nama_ap": null,
+        "alamat": null,
+        "alasan_penggantian": null,
+        "bantuan_pendahulu": null
+    },
+    "section_2_e": {
+        "tujuan_audit": null,
+        "has_internal_audit": "Tidak",
+        "kedudukan_internal_audit": null,
+        "going_concern": [
+            {
+                "no": "1)",
+                "description": "Apakah aliran kas (cash flow) tidak cukup untuk memenuhi kewajiban saat ini?",
+                "value": "Tidak",
+                "notes": null
+            },
+            {
+                "no": "2)",
+                "description": "Apakah penjualan, laba kotor dan laba bersih menunjukkan penurunan yang tajam pada tahun-tahun belakangan?",
+                "value": "Tidak",
+                "notes": null
+            },
+            {
+                "no": "3)",
+                "description": "Apakah terdapat hutang yang besar yang mengindikasikan kemungkinan adanya ketidakmampuan membayar dikemudian hari?",
+                "value": "Tidak",
+                "notes": null
+            },
+            {
+                "no": "4)",
+                "description": "Apakah ada penghapusan atau ketidakmampuan membayar hutang?",
+                "value": "Tidak",
+                "notes": null
+            },
+            {
+                "no": "5)",
+                "description": "Apakah terdapat perubahan dalam kondisi ekonomi yang dapat merugikan atau mempengaruhi industri klien?",
+                "value": "Tidak",
+                "notes": null
+            },
+            {
+                "no": "6)",
+                "description": "Apakah terdapat kasus hukum yang sedang dihadapi klien yang berdampak material terhadap keuangan klien?",
+                "value": "Tidak",
+                "notes": null
+            }
+        ],
+        "going_concern_conclusion": null
+    },
+    "section_2_f": {
+        "buku_pedoman": null,
+        "cara_mengolah_data": null,
+        "auditable": [
+            {
+                "no": "1)",
+                "description": "Apakah klien mampu menyusun neraca dan laporan laba\/rugi secara periodic?",
+                "value": "Ya"
+            },
+            {
+                "no": "2)",
+                "description": "Apakah neraca selalu menunjukkan saldo yang seimbang (balance)?",
+                "value": "Ya"
+            },
+            {
+                "no": "3)",
+                "description": "Apakah bukti disimpan secara memadai (rapi) dan lengkap?",
+                "value": "Ya"
+            },
+            {
+                "no": "4)",
+                "description": "Apakah ada rincian untuk setiap akun?",
+                "value": "Ya"
+            }
+        ],
+        "cycles": null
+    },
+    "section_2_g": "Tidak ada",
+    "section_2_h": {
+        "nilai_kontrak": null,
+        "tahap_pembayaran": null,
+        "jadwal_pelunasan": [
+            {
+                "no": 1,
+                "tanggal": null,
+                "keterangan": "Pembayaran termin I",
+                "persen": "50%",
+                "nominal": null
+            },
+            {
+                "no": 2,
+                "tanggal": null,
+                "keterangan": "Pembayaran termin II",
+                "persen": "50%",
+                "nominal": null
+            }
+        ]
+    },
+    "section_3": {
+        "questions": [
+            {
+                "no": 1,
+                "description": "Apakah klien mempunyai kebijakan tentang standar etika dan \"codes of conduct\", baik yang tertulis maupun yang dikomunikasikan?",
+                "value": "Tidak",
+                "notes": null
+            },
+            {
+                "no": 2,
+                "description": "Apakah standar etika dan \"codes of conduct\" telah dikomunikasikan dan dipraktikkan?",
+                "value": "Tidak",
+                "notes": null
+            },
+            {
+                "no": 3,
+                "description": "Apakah pengetahuan dan pengalaman manajemen memadai untuk menjalankan usaha?",
+                "value": "Tidak",
+                "notes": null
+            },
+            {
+                "no": 4,
+                "description": "Apakah pengendalian manajemen dan administratif cukup kuat?",
+                "value": "Tidak",
+                "notes": null
+            },
+            {
+                "no": 5,
+                "description": "Apakah sistem informasi manajemen yang ada telah memadai dan diterapkan?",
+                "value": "Tidak",
+                "notes": null
+            },
+            {
+                "no": 6,
+                "description": "Apakah terdapat perputaran (turn over) yang tinggi pada posisi-posisi kunci terutama pada fungsi keuangan dan akuntansi?",
+                "value": "Tidak",
+                "notes": null
+            },
+            {
+                "no": 7,
+                "description": "Apakah perputaran tersebut mempunyai pengaruh negatif terhadap operasi klien?",
+                "value": "Tidak",
+                "notes": null
+            },
+            {
+                "no": 8,
+                "description": "Apakah ada kondisi yang memungkinkan manajemen dalam posisi dapat melangkahi pengendalian yang ada?",
+                "value": "Tidak",
+                "notes": null
+            },
+            {
+                "no": 9,
+                "description": "Apakah ada tekanan terhadap manajemen untuk memanipulasi hasil operasi?",
+                "value": "Tidak",
+                "notes": null
+            },
+            {
+                "no": 10,
+                "description": "Apakah ada potensi risiko terhadap penyajian laporan keuangan yang mungkin timbul karena usaha manajemen untuk merespon expektasi yang tidak realistik?",
+                "value": "Tidak",
+                "notes": null
+            },
+            {
+                "no": 11,
+                "description": "Apakah pernah terjadi kesalahan dan kekeliruan yang material dalam laporan keuangan?",
+                "value": "Tidak",
+                "notes": null
+            },
+            {
+                "no": 12,
+                "description": "Apakah pernah terjadi pelanggaran hukum dan peraturan yang dilakukan klien atau pejabat klien?",
+                "value": "Tidak",
+                "notes": null
+            },
+            {
+                "no": 13,
+                "description": "Apakah ada transaksi material dengan pihak yang terkait yang belum diungkapkan dalam laporan keuangan?",
+                "value": "Tidak",
+                "notes": null
+            }
+        ],
+        "conclusion": null
+    },
+    "section_4": {
+        "questions": [
+            {
+                "no": 1,
+                "description": "Apakah KAP mempunyai utang yang signifikan kepada klien dengan persyaratan kredit yang melampaui batas-batas kenormalan?",
+                "value": "Tidak",
+                "notes": null
+            },
+            {
+                "no": 2,
+                "description": "Apakah ada partner atau staf KAP yang mempunyai piutang atau utang kepada\/dari klien?",
+                "value": "Tidak",
+                "notes": null
+            },
+            {
+                "no": 3,
+                "description": "Apakah ada karyawan klien yang menjadi pegawai atau partner pada KAP?",
+                "value": "Tidak",
+                "notes": null
+            },
+            {
+                "no": 4,
+                "description": "Apakah ada partner atau staf KAP yang mempunyai saham atau investasi lainnya pada klien?",
+                "value": "Tidak",
+                "notes": null
+            },
+            {
+                "no": 5,
+                "description": "Apakah ada partner KAP yang pada saat ini bertindak sebagai penasihat klien?",
+                "value": "Tidak",
+                "notes": null
+            },
+            {
+                "no": 6,
+                "description": "Apakah ada jasa lainnya yang dilaksanakan oleh KAP terhadap klien yang berpotensi konflik (misalnya sebagai penasihat keuangan)?",
+                "value": "Tidak",
+                "notes": null
+            },
+            {
+                "no": 7,
+                "description": "Apakah ada penilaian unsur laporan keuangan yang dilakukan oleh spesialis yang merupakan perusahaan \"asosiasi\" KAP yang berpotensi konflik?",
+                "value": "Tidak",
+                "notes": null
+            },
+            {
+                "no": 8,
+                "description": "Apakah engagement partner atau staf KAP mempunyai hubungan famili (secara garis lurus satu tingkat) atau personal dengan klien?",
+                "value": "Tidak",
+                "notes": null
+            },
+            {
+                "no": 9,
+                "description": "Apakah fee profesional untuk jasa audit dan jasa lainnya yang dibayar oleh klien melampaui 10% total pendapatan kantor?",
+                "value": "Tidak",
+                "notes": null
+            },
+            {
+                "no": 10,
+                "description": "Apakah fee profesional untuk jasa audit ini tergantung dari hasil penugasan?",
+                "value": "Tidak",
+                "notes": null
+            },
+            {
+                "no": 11,
+                "description": "Apakah ada partner atau staf KAP menerima barang atau jasa dalam nilai yang relatif tinggi dari klien?",
+                "value": "Tidak",
+                "notes": null
+            },
+            {
+                "no": 12,
+                "description": "Apakah partner atau staf KAP memberikan barang atau jasa dalam nilai yang relatif tinggi kepada klien?",
+                "value": "Tidak",
+                "notes": null
+            }
+        ],
+        "conclusion": null
+    },
+    "section_5": {
+        "staf_introduksi": null,
+        "referensi": [
+            null,
+            null
+        ],
+        "prosedur_lain": [
+            null,
+            null,
+            null
+        ],
+        "bantuan_klien": [
+            {
+                "no": 1,
+                "description": "Neraca percobaan (trial balance)",
+                "value": "Ya",
+                "notes": "Data sumber"
+            },
+            {
+                "no": 2,
+                "description": "General Ledger",
+                "value": "Ya",
+                "notes": "Data sumber"
+            },
+            {
+                "no": 3,
+                "description": "Laporan Keuangan Lengkap",
+                "value": "Ya",
+                "notes": "Data sumber"
+            },
+            {
+                "no": 4,
+                "description": "Akta Pendirian",
+                "value": "Ya",
+                "notes": "Data sumber"
+            },
+            {
+                "no": 5,
+                "description": "SOP dan Peraturan Internal Perusahaan",
+                "value": "Ya",
+                "notes": "Data sumber"
+            },
+            {
+                "no": 6,
+                "description": "Rincian kas dan Perusahaan",
+                "value": "Ya",
+                "notes": "Data sumber"
+            },
+            {
+                "no": 7,
+                "description": "Rekonsiliasi setiap rekening Perusahaan",
+                "value": "Ya",
+                "notes": "Data sumber"
+            },
+            {
+                "no": 8,
+                "description": "Daftar Piutang",
+                "value": "Ya",
+                "notes": "Data sumber"
+            },
+            {
+                "no": 9,
+                "description": "Daftar Investasi",
+                "value": "Ya",
+                "notes": "Data sumber"
+            },
+            {
+                "no": 10,
+                "description": "Daftar saldo uang muka & biaya dibayar di muka",
+                "value": "Ya",
+                "notes": "Data sumber"
+            },
+            {
+                "no": 11,
+                "description": "Daftar saldo persediaan, termasuk nilainya",
+                "value": "Ya",
+                "notes": "Data sumber"
+            },
+            {
+                "no": 12,
+                "description": "Daftar saldo surat-surat berharga",
+                "value": "Ya",
+                "notes": "Data sumber"
+            },
+            {
+                "no": 13,
+                "description": "Daftar saldo investasi",
+                "value": "Ya",
+                "notes": "Data sumber"
+            },
+            {
+                "no": 14,
+                "description": "Daftar saldo aset tetap",
+                "value": "Ya",
+                "notes": "Data sumber"
+            },
+            {
+                "no": 15,
+                "description": "Daftar saldo utang usaha",
+                "value": "Ya",
+                "notes": "Data sumber"
+            },
+            {
+                "no": 16,
+                "description": "Daftar saldo utang bank, and dokumen perjanjian utang",
+                "value": "Ya",
+                "notes": "Data sumber"
+            },
+            {
+                "no": 17,
+                "description": "Daftar Deposit Tamu",
+                "value": "Ya",
+                "notes": "Data sumber"
+            },
+            {
+                "no": 18,
+                "description": "Laporan Aktuaris Independen",
+                "value": "Ya",
+                "notes": "Data sumber"
+            },
+            {
+                "no": 19,
+                "description": "Daftar pemegang saham perubahannya dan Pembagian Dividen",
+                "value": "Ya",
+                "notes": "Data sumber"
+            },
+            {
+                "no": 20,
+                "description": "Dokumen transaksi hubungan istimewa",
+                "value": "Ya",
+                "notes": "Data sumber"
+            },
+            {
+                "no": 21,
+                "description": "Rincian Beban Administrasi dan Umum",
+                "value": "Ya",
+                "notes": "Data sumber"
+            }
+        ]
+    },
+    "section_6": {
+        "questions": [
+            {
+                "no": 1,
+                "description": "Apakah pemilik dan anggota manajemen hanya terdiri dari beberapa orang?",
+                "value": "T",
+                "notes": null
+            },
+            {
+                "no": 2,
+                "description": "Apakah terdapat perangkapan beberapa fungsi pengendalian utama?",
+                "value": "T",
+                "notes": null
+            },
+            {
+                "no": 3,
+                "description": "Apakah perangkat lunak yang digunakan untuk pembukuan masih sederhana?",
+                "value": "T",
+                "notes": null
+            },
+            {
+                "no": 4,
+                "description": "Apakah jenis produk\/jasa yang dihasilkan perusahaan sedikit?",
+                "value": "T",
+                "notes": null
+            },
+            {
+                "no": 5,
+                "description": "Apakah volume transaksi penjualan sedikit?",
+                "value": "T",
+                "notes": null
+            },
+            {
+                "no": 6,
+                "description": "Apakah lokasi penjualan tidak di banyak tempat?",
+                "value": "T",
+                "notes": null
+            },
+            {
+                "no": 7,
+                "description": "Apakah perusahaan tidak dibawah regulasi peraturan tertentu?",
+                "value": "T",
+                "notes": null
+            },
+            {
+                "no": 8,
+                "description": "Apakah pertumbuhan usaha perusahaan stabil?",
+                "value": "T",
+                "notes": null
+            },
+            {
+                "no": 9,
+                "description": "Apakah tidak terdapat ekspansi yang besar-besaran?",
+                "value": "T",
+                "notes": null
+            },
+            {
+                "no": 10,
+                "description": "Apakah ekspektasi terhadap jasa auditor hanya terbatas pada laporan auditor independen?",
+                "value": "T",
+                "notes": null
+            },
+            {
+                "no": 11,
+                "description": "Apakah prakiraan jam kerja audit tidak melebihi 200 jam?",
+                "value": "T",
+                "notes": null
+            },
+            {
+                "no": 12,
+                "description": "Apakah total aset perusahaan dibawah Rp25 Milyar?",
+                "value": "T",
+                "notes": null
+            },
+            {
+                "no": 13,
+                "description": "Apakah total pendapatan lebih kecil dari Rp50 Milyar?",
+                "value": "T",
+                "notes": null
+            },
+            {
+                "no": 14,
+                "description": "Apakah jumlah pegawai tidak melebihi 50 orang?",
+                "value": "T",
+                "notes": null
+            }
+        ],
+        "conclusion": "Tidak termasuk Kategori entitas dengan bisnis kecil untuk tujuan audit"
+    },
+    "section_b": {
+        "integritas": null,
+        "independensi": null,
+        "auditable": null,
+        "risiko": null,
+        "kesimpulan": "Diterima",
+        "level_risiko": "Rendah"
+    }
+}

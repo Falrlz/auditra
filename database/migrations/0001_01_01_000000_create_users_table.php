@@ -17,7 +17,8 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            $table->string('role')->default('anggota'); // 'anggota', 'ketua_tim', 'supervisor'
+            $table->string('role')->default('staff'); // 'admin', 'partner', 'manager', 'staff'
+            $table->string('inisial')->nullable();
             $table->rememberToken();
             $table->timestamps();
         });

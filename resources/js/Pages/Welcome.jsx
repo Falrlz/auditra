@@ -81,12 +81,6 @@ export default function Welcome({ auth, laravelVersion, phpVersion }) {
                                     >
                                         Masuk
                                     </Link>
-                                    <Link
-                                        href={route('register')}
-                                        className="px-4 py-2 bg-[#0071e3] text-white hover:bg-[#0077ed] text-sm font-semibold rounded-lg shadow-sm hover:scale-[1.02] active:scale-[0.98] transition"
-                                    >
-                                        Daftar
-                                    </Link>
                                 </>
                             )}
                         </nav>
@@ -246,7 +240,7 @@ export default function Welcome({ auth, laravelVersion, phpVersion }) {
                                 <div className="bg-white p-8 rounded-3xl border border-neutral-200/80 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] hover:border-[#0071e3]/30 transition-all hover:scale-[1.01] hover:-translate-y-1 duration-300 flex-1 flex flex-col justify-start">
                                     <div className="w-12 h-12 rounded-xl bg-green-50 text-[#34c759] border border-green-100 flex items-center justify-center mb-6">
                                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.746 3.746 0 0 1 3.296-1.043A3.746 3.746 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 0 1 3.296 1.043 3.746 3.746 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z" />
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296a3.746 3.746 0 0 1 3.296-1.043A3.746 3.746 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 0 1 3.296 1.043 3.746 3.746 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z" />
                                         </svg>
                                     </div>
                                     <h3 className="text-lg font-bold text-[#1d1d1f] mb-2">Persetujuan Bertingkat</h3>
@@ -295,9 +289,6 @@ export default function Welcome({ auth, laravelVersion, phpVersion }) {
                                 <ul className="space-y-2.5">
                                     <li>
                                         <Link href={route('login')} className="hover:underline hover:text-neutral-700 transition">Masuk ke Sistem</Link>
-                                    </li>
-                                    <li>
-                                        <Link href={route('register')} className="hover:underline hover:text-neutral-700 transition">Daftar Akun Baru</Link>
                                     </li>
                                     <li>
                                         <a href="#features" className="hover:underline hover:text-neutral-700 transition">Fitur Utama</a>

@@ -16,6 +16,7 @@ export default function UpdateProfileInformation({
         useForm({
             name: user.name,
             email: user.email,
+            inisial: user.inisial || '',
         });
 
     const submit = (e) => {
@@ -51,6 +52,22 @@ export default function UpdateProfileInformation({
                     />
 
                     <InputError className="mt-2" message={errors.name} />
+                </div>
+
+                <div>
+                    <InputLabel htmlFor="inisial" value="Inisial Pengguna" />
+
+                    <TextInput
+                        id="inisial"
+                        className="mt-1 block w-full uppercase"
+                        value={data.inisial}
+                        onChange={(e) => setData('inisial', e.target.value.toUpperCase())}
+                        required
+                        maxLength={3}
+                        placeholder="Contoh: AND"
+                    />
+
+                    <InputError className="mt-2" message={errors.inisial} />
                 </div>
 
                 <div>

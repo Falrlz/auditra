@@ -1,42 +1,79 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, router } from '@inertiajs/react';
 import React, { useState } from 'react';
-import AuditFormWizard from '@/Components/AuditFormWizard';
 import axios from 'axios';
 
-export default function Dashboard({ auth, forms }) {
+export default function Dashboard({ auth, clients, allUsers }) {
     const user = auth.user;
-    const [showWizard, setShowWizard] = useState(false);
-    const [selectedForm, setSelectedForm] = useState(null);
+    const urlParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
+    const activeTab = urlParams.get('tab') === 'users' ? 'users' : 'perikatan';
     const [viewDetailForm, setViewDetailForm] = useState(null);
     const [activeDetailTab, setActiveDetailTab] = useState(0);
 
-    const handleOpenDetail = (form) => {
-        setViewDetailForm(form);
-        setActiveDetailTab(0);
+    // Persist active client ID in localStorage
+    const [selectedClientId, setSelectedClientId] = useState(() => {
+        return localStorage.getItem('auditra_selected_client_id') || '';
+    });
+
+    const activeClient = clients.find(c => String(c.id) === String(selectedClientId)) || null;
+
+    const handleSelectClient = (client) => {
+        setSelectedClientId(client.id);
+        localStorage.setItem('auditra_selected_client_id', client.id);
     };
 
-    // Ketua Tim Review state
+    const handleBackToClients = () => {
+        setSelectedClientId('');
+        localStorage.removeItem('auditra_selected_client_id');
+    };
+
+    // Client CRUD Modals State
+    const [showAddClientModal, setShowAddClientModal] = useState(false);
+    const [showEditClientModal, setShowEditClientModal] = useState(false);
+    const [editClientData, setEditClientData] = useState(null);
+    const [newClientName, setNewClientName] = useState('');
+    const [newBookYear, setNewBookYear] = useState('');
+    const [newSchedule, setNewSchedule] = useState('');
+
+    // Team Assignment Modal State
+    const [showTeamModal, setShowTeamModal] = useState(false);
+    const [teamClient, setTeamClient] = useState(null);
+    const [teamRows, setTeamRows] = useState([]);
+
+    // User Register Modal State
+    const [showAddUserModal, setShowAddUserModal] = useState(false);
+    const [usrName, setUsrName] = useState('');
+    const [usrEmail, setUsrEmail] = useState('');
+    const [usrPassword, setUsrPassword] = useState('');
+    const [usrRole, setUsrRole] = useState('staff');
+    const [usrInisial, setUsrInisial] = useState('');
+
+    // Review Modal State
     const [showReviewModal, setShowReviewModal] = useState(false);
     const [reviewForm, setReviewForm] = useState(null);
     const [reviewAction, setReviewAction] = useState('approve');
     const [rejectReason, setRejectReason] = useState('');
     const [submittingReview, setSubmittingReview] = useState(false);
 
-    const handleCreateNew = () => {
-        setSelectedForm(null);
-        setShowWizard(true);
+    const handleOpenDetail = (form) => {
+        setViewDetailForm(form);
+        setActiveDetailTab(0);
+    };
+
+    const handleCreateA10 = () => {
+        router.visit(route('a10.create', { client_id: activeClient.id }));
+    };
+
+    const handleCreateD10 = () => {
+        router.visit(route('d10.create', { client_id: activeClient.id }));
     };
 
     const handleEditForm = (form) => {
-        setSelectedForm(form);
-        setShowWizard(true);
-    };
-
-    const handleSaveSuccess = () => {
-        setShowWizard(false);
-        setSelectedForm(null);
-        router.reload();
+        if (form.form_type === 'D10') {
+            router.visit(route('d10.edit', form.id));
+        } else {
+            router.visit(route('a10.edit', form.id));
+        }
     };
 
     const handleSubmitToReview = (formId) => {
@@ -72,9 +109,129 @@ export default function Dashboard({ auth, forms }) {
         });
     };
 
-    const handleApproveSupervisor = (formId) => {
-        if (confirm('Setujui formulir audit ini secara final?')) {
-            router.post(route('audit-forms.approve-supervisor', formId), {}, {
+    // Client CRUD Actions
+    const handleAddClientSubmit = (e) => {
+        e.preventDefault();
+        router.post(route('clients.store'), {
+            name: newClientName,
+            book_year: newBookYear,
+            schedule: newSchedule || 'Pre-Engagement & Evaluasi',
+        }, {
+            onSuccess: () => {
+                setShowAddClientModal(false);
+                setNewClientName('');
+                setNewBookYear('');
+                setNewSchedule('');
+            }
+        });
+    };
+
+    const handleOpenEditClient = (client) => {
+        setEditClientData(client);
+        setNewClientName(client.name);
+        setNewBookYear(client.book_year);
+        setNewSchedule(client.schedule);
+        setShowEditClientModal(true);
+    };
+
+    const handleEditClientSubmit = (e) => {
+        e.preventDefault();
+        router.post(route('clients.update', editClientData.id), {
+            name: newClientName,
+            book_year: newBookYear,
+            schedule: newSchedule,
+        }, {
+            onSuccess: () => {
+                setShowEditClientModal(false);
+                setEditClientData(null);
+                setNewClientName('');
+                setNewBookYear('');
+                setNewSchedule('');
+            }
+        });
+    };
+
+    const handleDeleteClient = (client) => {
+        if (confirm(`Apakah Anda yakin ingin menghapus perikatan klien ${client.name}?`)) {
+            router.delete(route('clients.destroy', client.id), {
+                onSuccess: () => router.reload()
+            });
+        }
+    };
+
+    // Team Assignment Actions
+    const handleOpenTeamModal = (client) => {
+        setTeamClient(client);
+        
+        if (client.team && client.team.length > 0) {
+            setTeamRows(client.team.map(t => ({
+                user_id: String(t.id),
+                role: t.role
+            })));
+        } else {
+            setTeamRows([{ user_id: '', role: 'anggota' }]);
+        }
+
+        setShowTeamModal(true);
+    };
+
+    const handleAddRow = () => {
+        setTeamRows([...teamRows, { user_id: '', role: 'anggota' }]);
+    };
+
+    const handleRemoveRow = (index) => {
+        if (teamRows.length === 1) {
+            setTeamRows([{ user_id: '', role: 'anggota' }]);
+        } else {
+            setTeamRows(teamRows.filter((_, idx) => idx !== index));
+        }
+    };
+
+    const handleUpdateRow = (index, field, value) => {
+        const updated = [...teamRows];
+        updated[index][field] = value;
+        setTeamRows(updated);
+    };
+
+    const handleTeamSubmit = (e) => {
+        e.preventDefault();
+        const validRows = teamRows.filter(row => row.user_id !== '');
+        
+        router.post(route('clients.team.update', teamClient.id), {
+            team: validRows
+        }, {
+            onSuccess: () => {
+                setShowTeamModal(false);
+                setTeamClient(null);
+            }
+        });
+    };
+
+    // Register User Action
+    const handleAddUserSubmit = (e) => {
+        e.preventDefault();
+        router.post(route('users.store'), {
+            name: usrName,
+            email: usrEmail,
+            password: usrPassword,
+            role: usrRole,
+            inisial: usrInisial
+        }, {
+            onSuccess: () => {
+                setShowAddUserModal(false);
+                setUsrName('');
+                setUsrEmail('');
+                setUsrPassword('');
+                setUsrRole('staff');
+                setUsrInisial('');
+            }
+        });
+    };
+
+    // Delete User Action
+    const handleDeleteUser = (userToDelete) => {
+        if (confirm(`Apakah Anda yakin ingin menghapus user ${userToDelete.name}?`)) {
+            router.delete(route('users.destroy', userToDelete.id), {
                 onSuccess: () => router.reload()
             });
         }
@@ -84,23 +241,25 @@ export default function Dashboard({ auth, forms }) {
     const renderStatusBadge = (status) => {
         const styles = {
             draft: 'bg-neutral-100 text-neutral-600 border-neutral-200/80',
-            pending_approval: 'bg-orange-50 text-orange-600 border-orange-200',
-            approved_by_leader: 'bg-blue-50 text-blue-600 border-blue-200',
-            approved: 'bg-green-50 text-green-600 border-green-200',
+            pending_ketua_tim: 'bg-orange-50 text-orange-600 border-orange-200',
+            pending_supervisor: 'bg-amber-50 text-amber-600 border-amber-200',
+            pending_partner: 'bg-blue-50 text-blue-600 border-blue-200',
+            final_approved: 'bg-green-50 text-green-700 border-green-200',
             rejected: 'bg-red-50 text-red-600 border-red-200',
         };
 
         const labels = {
             draft: 'Draft',
-            pending_approval: 'Menunggu Persetujuan',
-            approved_by_leader: 'Disetujui Ketua Tim',
-            approved: 'Disetujui Final',
+            pending_ketua_tim: 'Menunggu Ketua Tim',
+            pending_supervisor: 'Menunggu Supervisor',
+            pending_partner: 'Menunggu Partner',
+            final_approved: 'Disetujui Final',
             rejected: 'Ditolak',
         };
 
         return (
-            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${styles[status]}`}>
-                {labels[status]}
+            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${styles[status] || 'bg-neutral-150 text-neutral-500'}`}>
+                {labels[status] || status}
             </span>
         );
     };
@@ -116,310 +275,451 @@ export default function Dashboard({ auth, forms }) {
                             </svg>
                         </div>
                         <div>
-                            <h2 className="text-xl font-extrabold text-[#1d1d1f] tracking-tight">
-                                Persetujuan Dokumen Audit
-                            </h2>
-                            <p className="text-xs text-neutral-400 font-medium">Manajemen Evaluasi & Penerimaan Klien KAP</p>
+                            {activeClient ? (
+                                <>
+                                    <h2 className="text-xl font-extrabold text-[#1d1d1f] tracking-tight">
+                                        Perikatan: {activeClient.name}
+                                    </h2>
+                                    <p className="text-xs text-neutral-400 font-medium">
+                                        Tahun Buku: {activeClient.book_year} | Jadwal: {activeClient.schedule}
+                                    </p>
+                                </>
+                            ) : (
+                                <>
+                                    <h2 className="text-xl font-extrabold text-[#1d1d1f] tracking-tight">
+                                        {activeTab === 'users' ? 'Kelola User Sistem' : 'Daftar Perikatan Audit'}
+                                    </h2>
+                                    <p className="text-xs text-neutral-400 font-medium">
+                                        {activeTab === 'users' ? 'Kelola akun & hak akses untuk Linda, Sandra, Joko, Andi, Saipul.' : 'Pilih perikatan klien untuk mengelola laporan A10 dan laporan D10.'}
+                                    </p>
+                                </>
+                            )}
                         </div>
                     </div>
 
-                    <div className="hidden md:flex items-center gap-3 bg-neutral-50/80 px-4 py-2 rounded-xl border border-neutral-200/60 shadow-sm backdrop-blur-sm">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
-                            {user.name.charAt(0).toUpperCase()}
-                        </div>
-                        <div className="text-left">
-                            <span className="block text-[9px] text-neutral-400 font-bold uppercase tracking-wider">PENGGUNA AKTIF</span>
-                            <span className="text-xs text-neutral-600 font-medium">
-                                👋 Selamat bekerja, <strong className="text-[#0071e3] font-bold">{user.name}</strong>
-                            </span>
+                    <div className="flex items-center gap-3">
+
+
+                        <div className="hidden md:flex items-center gap-3 bg-neutral-50/80 px-4 py-2 rounded-xl border border-neutral-200/60 shadow-sm backdrop-blur-sm">
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
+                                {user.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="text-left">
+                                <span className="block text-[9px] text-neutral-400 font-bold uppercase tracking-wider">PENGGUNA AKTIF ({user.inisial || '-'})</span>
+                                <span className="text-xs text-neutral-600 font-medium">
+                                    👋 Halo, <strong className="text-[#0071e3] font-bold">{user.name}</strong>
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>
             }
         >
-            <Head title="Dashboard" />
+            <Head title="Dashboard Auditra" />
 
             <div className="py-8 px-4 sm:px-6 lg:px-8">
                 <div className="max-w-7xl mx-auto space-y-8">
-                    {/* Top Stats Cards */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-                        <div className="glass-panel p-4 md:p-5 rounded-xl md:rounded-2xl flex items-center justify-between animate-fade-in-up hover:-translate-y-1 hover:shadow-md hover:border-[#0071e3]/20 transition-all duration-300 ease-out" style={{ animationDelay: '0.05s' }}>
-                            <div>
-                                <p className="text-[10px] md:text-xs text-neutral-500 font-semibold uppercase tracking-wider">Total Formulir</p>
-                                <h3 className="text-2xl md:text-3xl font-bold text-[#1d1d1f] mt-1">{forms.length}</h3>
+                    {activeClient ? (
+                        /* ================== WORKSPACE: ACTIVE CLIENT DETAIL ================== */
+                        <div className="space-y-6">
+                            <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-neutral-200 shadow-sm">
+                                <button
+                                    onClick={handleBackToClients}
+                                    className="inline-flex items-center gap-2 px-4 py-2 border border-neutral-200 hover:border-neutral-300 text-neutral-600 hover:text-neutral-900 rounded-lg bg-neutral-50 hover:bg-neutral-100 transition text-xs font-bold"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+                                    </svg>
+                                    Kembali ke Daftar Perikatan
+                                </button>
+                                <div className="text-xs text-neutral-500 font-medium">
+                                    Role Anda di Tim: <span className="text-[#0071e3] font-bold bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100 uppercase tracking-wider">{activeClient.team_role || 'Tidak Terlibat'}</span>
+                                </div>
                             </div>
-                            <div className="bg-blue-50 p-2 md:p-3 rounded-lg md:rounded-xl border border-blue-100 text-[#0071e3] shrink-0">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 md:w-6 h-6">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-                                </svg>
+
+                            {/* Client Team Information */}
+                            <div className="bg-white p-6 rounded-2xl border border-neutral-200 shadow-sm space-y-4">
+                                <h3 className="text-sm font-extrabold text-[#1d1d1f] uppercase tracking-wider">Susunan Tim Perikatan Klien</h3>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    {activeClient.team && activeClient.team.length > 0 ? (
+                                        activeClient.team.map((member, idx) => {
+                                            const roleLabels = {
+                                                anggota: 'Anggota (Staff)',
+                                                ketua_tim: 'Ketua Tim (Staff)',
+                                                supervisor: 'Supervisor (Manager)',
+                                                partner: 'Partner (Partner)'
+                                            };
+                                            return (
+                                                <div key={idx} className="bg-neutral-50 p-4 rounded-xl border border-neutral-100 flex flex-col justify-between">
+                                                    <span className="text-[10px] text-neutral-400 font-bold block uppercase">{roleLabels[member.role] || member.role}</span>
+                                                    <div className="mt-2">
+                                                        <span className="text-sm font-extrabold text-neutral-800 block">{member.name}</span>
+                                                        <span className="inline-block mt-1 bg-white border px-2 py-0.5 rounded text-[10px] font-bold text-neutral-500">Inisial: {member.inisial}</span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })
+                                    ) : (
+                                        <div className="col-span-full py-4 text-center text-xs text-neutral-450 italic">Belum ada tim yang ditunjuk.</div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Reports List Table */}
+                            <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden">
+                                <div className="p-5 border-b border-neutral-100 bg-neutral-50/50 flex justify-between items-center">
+                                    <h3 className="text-sm font-extrabold text-[#1d1d1f] uppercase tracking-wider">Daftar Formulir / Laporan Kerja</h3>
+                                    <span className="text-[10px] text-neutral-500 bg-white border px-2 py-0.5 rounded font-bold uppercase">Dokumen Audit</span>
+                                </div>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left border-collapse">
+                                        <thead>
+                                            <tr className="border-b border-neutral-200 text-neutral-500 bg-neutral-50/30 text-xs font-bold uppercase tracking-wider text-[10px]">
+                                                <th className="py-4 px-6 w-24">INDEX</th>
+                                                <th className="py-4 px-6">KETERANGAN</th>
+                                                <th className="py-4 px-6 w-48">STATUS</th>
+                                                <th className="py-4 px-6 w-60">PEMBUAT / PENINJAU</th>
+                                                <th className="py-4 px-6 text-right w-80">AKSI</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-neutral-100 text-sm text-neutral-700">
+                                            {/* Baris 1: A10 */}
+                                            {(() => {
+                                                const formA10 = activeClient.forms.find(f => f.form_type === 'A10');
+                                                const canEdit = activeClient.team_role === 'anggota' && (!formA10 || formA10.status === 'draft' || formA10.status === 'rejected');
+                                                const isPendingReview = formA10 && (
+                                                    (formA10.status === 'pending_ketua_tim' && activeClient.team_role === 'ketua_tim') ||
+                                                    (formA10.status === 'pending_supervisor' && activeClient.team_role === 'supervisor') ||
+                                                    (formA10.status === 'pending_partner' && activeClient.team_role === 'partner')
+                                                );
+
+                                                return (
+                                                    <tr className="hover:bg-neutral-50/30 transition">
+                                                        <td className="py-5 px-6 font-extrabold text-[#0071e3]">A10</td>
+                                                        <td className="py-5 px-6">
+                                                            <div className="font-bold text-neutral-900">Survei Penerimaan Klien (SA 210)</div>
+                                                        </td>
+                                                        <td className="py-5 px-6">
+                                                            {formA10 ? renderStatusBadge(formA10.status) : (
+                                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border bg-neutral-100 text-neutral-400 border-neutral-200/60">
+                                                                    Belum Dibuat
+                                                                </span>
+                                                            )}
+                                                        </td>
+                                                        <td className="py-5 px-6 text-xs text-neutral-500 space-y-1">
+                                                            {formA10 ? (
+                                                                <>
+                                                                    <div>Disiapkan oleh: <strong className="text-neutral-700 font-bold">{formA10.preparer?.name || '-'} ({formA10.preparer?.inisial || '-'})</strong></div>
+                                                                    {formA10.reject_reason && <div className="text-red-500 font-medium mt-0.5">Alasan Penolakan: <strong>"{formA10.reject_reason}"</strong></div>}
+                                                                </>
+                                                            ) : (
+                                                                <span className="text-neutral-400">-</span>
+                                                            )}
+                                                        </td>
+                                                        <td className="py-5 px-6 text-right">
+                                                            <div className="flex justify-end gap-1.5 flex-wrap">
+                                                                {formA10 && (
+                                                                    <button
+                                                                        onClick={() => handleOpenDetail(formA10)}
+                                                                        className="px-3 py-1.5 border border-neutral-200 hover:border-neutral-300 text-neutral-600 hover:text-neutral-800 rounded-lg hover:bg-neutral-50 text-xs font-bold transition duration-200"
+                                                                    >
+                                                                        Pratinjau
+                                                                    </button>
+                                                                )}
+
+                                                                {canEdit && (
+                                                                    <>
+                                                                        <button
+                                                                            onClick={formA10 ? () => handleEditForm(formA10) : handleCreateA10}
+                                                                            className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-[#0071e3] border border-blue-100 rounded-lg text-xs font-bold transition duration-200"
+                                                                        >
+                                                                            {formA10 ? 'Edit' : 'Isi Form'}
+                                                                        </button>
+                                                                        {formA10 && (
+                                                                            <button
+                                                                                onClick={() => handleSubmitToReview(formA10.id)}
+                                                                                className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-bold transition duration-200"
+                                                                            >
+                                                                                Kirim Review
+                                                                            </button>
+                                                                        )}
+                                                                    </>
+                                                                )}
+
+                                                                {isPendingReview && (
+                                                                    <button
+                                                                        onClick={() => handleOpenReview(formA10)}
+                                                                        className="px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-xs font-bold transition duration-200"
+                                                                    >
+                                                                        Review
+                                                                    </button>
+                                                                )}
+
+                                                                {!formA10 && !canEdit && (
+                                                                    <span className="text-xs text-neutral-400 font-medium">Menunggu Staff Anggota</span>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })()}
+
+                                            {/* Baris 2: D10 */}
+                                            {(() => {
+                                                const formD10 = activeClient.forms.find(f => f.form_type === 'D10');
+                                                const canEdit = activeClient.team_role === 'anggota' && (!formD10 || formD10.status === 'draft' || formD10.status === 'rejected');
+                                                const isPendingReview = formD10 && (
+                                                    (formD10.status === 'pending_ketua_tim' && activeClient.team_role === 'ketua_tim') ||
+                                                    (formD10.status === 'pending_supervisor' && activeClient.team_role === 'supervisor') ||
+                                                    (formD10.status === 'pending_partner' && activeClient.team_role === 'partner')
+                                                );
+
+                                                return (
+                                                    <tr className="hover:bg-neutral-50/30 transition">
+                                                        <td className="py-5 px-6 font-extrabold text-indigo-600">D10</td>
+                                                        <td className="py-5 px-6">
+                                                            <div className="font-bold text-neutral-900">Materialitas & Batas Salah Saji</div>
+                                                        </td>
+                                                        <td className="py-5 px-6">
+                                                            {formD10 ? renderStatusBadge(formD10.status) : (
+                                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border bg-neutral-100 text-neutral-400 border-neutral-200/60">
+                                                                    Belum Dibuat
+                                                                </span>
+                                                            )}
+                                                        </td>
+                                                        <td className="py-5 px-6 text-xs text-neutral-500 space-y-1">
+                                                            {formD10 ? (
+                                                                <>
+                                                                    <div>Disiapkan oleh: <strong className="text-neutral-700 font-bold">{formD10.preparer?.name || '-'} ({formD10.preparer?.inisial || '-'})</strong></div>
+                                                                    {formD10.reject_reason && <div className="text-red-500 font-medium mt-0.5">Alasan Penolakan: <strong>"{formD10.reject_reason}"</strong></div>}
+                                                                </>
+                                                            ) : (
+                                                                <span className="text-neutral-400">-</span>
+                                                            )}
+                                                        </td>
+                                                        <td className="py-5 px-6 text-right">
+                                                            <div className="flex justify-end gap-1.5 flex-wrap">
+                                                                {formD10 && (
+                                                                    <button
+                                                                        onClick={() => handleOpenDetail(formD10)}
+                                                                        className="px-3 py-1.5 border border-neutral-200 hover:border-neutral-300 text-neutral-600 hover:text-neutral-800 rounded-lg hover:bg-neutral-50 text-xs font-bold transition duration-200"
+                                                                    >
+                                                                        Pratinjau
+                                                                    </button>
+                                                                )}
+
+                                                                {canEdit && (
+                                                                    <>
+                                                                        <button
+                                                                            onClick={formD10 ? () => handleEditForm(formD10) : handleCreateD10}
+                                                                            className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-[#0071e3] border border-blue-100 rounded-lg text-xs font-bold transition duration-200"
+                                                                        >
+                                                                            {formD10 ? 'Edit' : 'Isi Form'}
+                                                                        </button>
+                                                                        {formD10 && (
+                                                                            <button
+                                                                                onClick={() => handleSubmitToReview(formD10.id)}
+                                                                                className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-bold transition duration-200"
+                                                                            >
+                                                                                Kirim Review
+                                                                            </button>
+                                                                        )}
+                                                                    </>
+                                                                )}
+
+                                                                {isPendingReview && (
+                                                                    <button
+                                                                        onClick={() => handleOpenReview(formD10)}
+                                                                        className="px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-xs font-bold transition duration-200"
+                                                                    >
+                                                                        Review
+                                                                    </button>
+                                                                )}
+
+                                                                {!formD10 && !canEdit && (
+                                                                    <span className="text-xs text-neutral-400 font-medium">Menunggu Staff Anggota</span>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })()}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
-
-                        <div className="glass-panel p-4 md:p-5 rounded-xl md:rounded-2xl flex items-center justify-between animate-fade-in-up hover:-translate-y-1 hover:shadow-md hover:border-orange-500/20 transition-all duration-300 ease-out" style={{ animationDelay: '0.1s' }}>
-                            <div>
-                                <p className="text-[10px] md:text-xs text-neutral-500 font-semibold uppercase tracking-wider">Menunggu Approval</p>
-                                <h3 className="text-2xl md:text-3xl font-bold text-orange-500 mt-1">
-                                    {forms.filter(f => f.status === 'pending_approval').length}
-                                </h3>
+                    ) : activeTab === 'users' ? (
+                        /* ================== TAB 2 (ADMIN): USER MANAGEMENT ================== */
+                        <div className="glass-panel rounded-2xl overflow-hidden bg-white">
+                            <div className="p-6 border-b border-neutral-100 flex justify-between items-center">
+                                <div>
+                                    <h3 className="text-lg font-bold text-[#1d1d1f]">Daftar Pengguna Sistem</h3>
+                                    <p className="text-neutral-500 text-xs mt-1">Daftar pengguna terdaftar dan hak akses role masing-masing.</p>
+                                </div>
+                                <button
+                                    onClick={() => setShowAddUserModal(true)}
+                                    className="btn-glow-indigo text-xs font-semibold px-4 py-2.5 rounded-xl flex items-center gap-2"
+                                >
+                                    Daftarkan User Baru
+                                </button>
                             </div>
-                            <div className="bg-orange-50 p-2 md:p-3 rounded-lg md:rounded-xl border border-orange-100 text-orange-500 shrink-0">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 md:w-6 h-6">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
+
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr className="border-b border-neutral-200 text-xs text-neutral-500 bg-neutral-50/80 font-bold uppercase tracking-wider text-[10px]">
+                                            <th className="py-4 px-6">NAMA</th>
+                                            <th className="py-4 px-6">INISIAL</th>
+                                            <th className="py-4 px-6">EMAIL</th>
+                                            <th className="py-4 px-6">ROLE SISTEM</th>
+                                            <th className="py-4 px-6 text-right">AKSI</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-neutral-100 text-sm text-neutral-750">
+                                        {allUsers.map((u) => (
+                                            <tr key={u.id} className="hover:bg-neutral-50/30">
+                                                <td className="py-4 px-6 font-bold text-neutral-900">{u.name}</td>
+                                                <td className="py-4 px-6"><span className="bg-neutral-100 px-2 py-0.5 rounded font-extrabold text-xs text-neutral-600">{u.inisial || '-'}</span></td>
+                                                <td className="py-4 px-6 text-neutral-600 font-semibold">{u.email}</td>
+                                                <td className="py-4 px-6">
+                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border bg-blue-50 text-[#0071e3] border-blue-100 uppercase tracking-wider text-[9px]">
+                                                        {u.role}
+                                                    </span>
+                                                </td>
+                                                <td className="py-4 px-6 text-right">
+                                                    {u.id !== user.id ? (
+                                                        <button
+                                                            onClick={() => handleDeleteUser(u)}
+                                                            className="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition text-xs font-bold border border-red-200/40"
+                                                        >
+                                                            Hapus
+                                                        </button>
+                                                    ) : (
+                                                        <span className="text-xs text-neutral-400 font-medium italic">Akun Anda</span>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
-
-                        <div className="glass-panel p-4 md:p-5 rounded-xl md:rounded-2xl flex items-center justify-between animate-fade-in-up hover:-translate-y-1 hover:shadow-md hover:border-green-600/20 transition-all duration-300 ease-out" style={{ animationDelay: '0.15s' }}>
-                            <div>
-                                <p className="text-[10px] md:text-xs text-neutral-500 font-semibold uppercase tracking-wider">Disetujui Final</p>
-                                <h3 className="text-2xl md:text-3xl font-bold text-green-600 mt-1">
-                                    {forms.filter(f => f.status === 'approved').length}
-                                </h3>
-                            </div>
-                            <div className="bg-green-50 p-2 md:p-3 rounded-lg md:rounded-xl border border-green-100 text-green-600 shrink-0">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 md:w-6 h-6">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                            </div>
-                        </div>
-
-                        <div className="glass-panel p-4 md:p-5 rounded-xl md:rounded-2xl flex items-center justify-between animate-fade-in-up hover:-translate-y-1 hover:shadow-md hover:border-red-500/20 transition-all duration-300 ease-out" style={{ animationDelay: '0.2s' }}>
-                            <div>
-                                <p className="text-[10px] md:text-xs text-neutral-500 font-semibold uppercase tracking-wider">Form Ditolak</p>
-                                <h3 className="text-2xl md:text-3xl font-bold text-red-500 mt-1">
-                                    {forms.filter(f => f.status === 'rejected').length}
-                                </h3>
-                            </div>
-                            <div className="bg-red-50 p-2 md:p-3 rounded-lg md:rounded-xl border border-red-100 text-red-500 shrink-0">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 md:w-6 h-6">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Main Workflow Area */}
-                    {showWizard ? (
-                        <AuditFormWizard
-                            formToEdit={selectedForm}
-                            onClose={() => setShowWizard(false)}
-                            onSaveSuccess={handleSaveSuccess}
-                        />
                     ) : (
-                        <div className="glass-panel rounded-2xl overflow-hidden animate-fade-in-up" style={{ animationDelay: '0.25s' }}>
+                        /* ================== TAB 1: LIST CLIENTS/PERIKATAN ================== */
+                        <div className="glass-panel rounded-2xl overflow-hidden bg-white animate-fade-in-up">
                             <div className="p-6 border-b border-neutral-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                                 <div>
-                                    <h3 className="text-lg font-bold text-[#1d1d1f]">Daftar Dokumen Survei Pendahuluan - A10</h3>
-                                    <p className="text-neutral-500 text-xs mt-1">Klik nama klien untuk melihat pratinjau detail.</p>
+                                    <h3 className="text-lg font-bold text-[#1d1d1f]">Daftar Klien / Perikatan Audit</h3>
+                                    <p className="text-neutral-500 text-xs mt-1">
+                                        {user.role === 'admin' ? 'Daftar perikatan untuk kelola data CRUD perikatan klien.' : 'Daftar perikatan aktif tempat Anda ditugaskan.'}
+                                    </p>
                                 </div>
-                                {user.role === 'anggota' && (
+                                {user.role === 'admin' && (
                                     <button
-                                        onClick={handleCreateNew}
-                                        className="btn-glow-indigo text-xs font-semibold px-4 py-2 rounded-lg flex items-center gap-2"
+                                        onClick={() => setShowAddClientModal(true)}
+                                        className="btn-glow-indigo text-xs font-semibold px-4 py-2.5 rounded-xl flex items-center gap-2"
                                     >
                                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
                                             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                                         </svg>
-                                        Isi Form Baru
+                                        Tambah Perikatan Baru
                                     </button>
                                 )}
                             </div>
 
-                            {/* Desktop Table - Hidden on Mobile */}
-                            <div className="hidden md:block overflow-x-auto">
+                            <div className="overflow-x-auto">
                                 <table className="w-full text-left border-collapse">
                                     <thead>
                                         <tr className="border-b border-neutral-200 text-xs text-neutral-500 bg-neutral-50/80">
                                             <th className="py-4 px-6">NAMA KLIEN</th>
                                             <th className="py-4 px-6">TAHUN BUKU</th>
-                                            <th className="py-4 px-6">STATUS</th>
-                                            <th className="py-4 px-6">DISIAPKAN OLEH</th>
-                                            <th className="py-4 px-6">TANGGAL UPDATE</th>
+                                            <th className="py-4 px-6">JADWAL/SKEDUL PENILAIAN</th>
+                                            <th className="py-4 px-6">STATUS LAPORAN</th>
                                             <th className="py-4 px-6 text-right">AKSI</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-neutral-100 text-sm text-neutral-700">
-                                        {forms.length === 0 ? (
+                                        {clients.length === 0 ? (
                                             <tr>
-                                                <td colSpan="6" className="py-12 text-center text-neutral-400">
-                                                    Belum ada data formulir audit.
+                                                <td colSpan="5" className="py-12 text-center text-neutral-400 font-semibold">
+                                                    Belum ada data perikatan aktif untuk Anda.
                                                 </td>
                                             </tr>
                                         ) : (
-                                            forms.map((form) => (
-                                                <tr key={form.id} className="hover:bg-neutral-50/50 transition border-b border-neutral-100">
-                                                    <td className="py-4 px-6 font-semibold text-neutral-900">
-                                                        <button onClick={() => handleOpenDetail(form)} className="hover:text-[#0071e3] text-left">
-                                                            {form.client_name}
-                                                        </button>
-                                                    </td>
-                                                    <td className="py-4 px-6 text-xs text-neutral-600">{form.book_year}</td>
-                                                    <td className="py-4 px-6">{renderStatusBadge(form.status)}</td>
-                                                    <td className="py-4 px-6 text-xs text-neutral-600">{form.preparer?.name}</td>
-                                                    <td className="py-4 px-6 text-xs text-neutral-500">
-                                                        {new Date(form.updated_at).toLocaleDateString('id-ID', {
-                                                            hour: '2-digit', minute: '2-digit'
-                                                        })}
-                                                    </td>
-                                                    <td className="py-4 px-6 text-right">
-                                                        <div className="flex justify-end gap-2">
-                                                            {/* Details button */}
-                                                            <button
-                                                                onClick={() => handleOpenDetail(form)}
-                                                                className="px-2.5 py-1 border border-neutral-200 text-neutral-600 hover:text-neutral-900 rounded-lg hover:bg-neutral-50 transition text-xs"
-                                                            >
-                                                                Detail
+                                            clients.map((client) => {
+                                                const formA10 = client.forms.find(f => f.form_type === 'A10');
+                                                const formD10 = client.forms.find(f => f.form_type === 'D10');
+                                                return (
+                                                    <tr key={client.id} className="hover:bg-neutral-50/50 transition">
+                                                        <td className="py-4 px-6 font-bold text-neutral-900">
+                                                            <button onClick={() => handleSelectClient(client)} className="hover:text-[#0071e3] text-left flex items-center gap-2">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-neutral-400">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.6-3.7A2.25 2.25 0 0012 9H4.5A2.25 2.25 0 002.25 11.25V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V12a2.25 2.25 0 00-2.25-2.25H12" />
+                                                                </svg>
+                                                                {client.name}
                                                             </button>
-
-                                                            {/* Anggota Actions */}
-                                                            {user.role === 'anggota' && (form.status === 'draft' || form.status === 'rejected') && (
-                                                                <>
+                                                        </td>
+                                                        <td className="py-4 px-6 text-xs text-neutral-600 font-semibold">{client.book_year}</td>
+                                                        <td className="py-4 px-6 text-xs text-neutral-500 truncate max-w-[200px]">{client.schedule}</td>
+                                                        <td className="py-4 px-6 text-xs font-semibold">
+                                                            <div className="flex gap-2">
+                                                                <span className={`px-2 py-0.5 rounded border text-[9px] font-bold ${formA10 ? 'bg-blue-50 border-blue-200 text-[#0071e3]' : 'bg-neutral-50 border-neutral-200 text-neutral-400'}`}>A10</span>
+                                                                <span className={`px-2 py-0.5 rounded border text-[9px] font-bold ${formD10 ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-neutral-50 border-neutral-200 text-neutral-400'}`}>D10</span>
+                                                            </div>
+                                                        </td>
+                                                        <td className="py-4 px-6 text-right">
+                                                            <div className="flex justify-end gap-1.5">
+                                                                {user.role === 'admin' && (
+                                                                    <>
+                                                                        <button
+                                                                            onClick={() => handleOpenEditClient(client)}
+                                                                            className="px-2.5 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-lg transition text-xs font-bold"
+                                                                        >
+                                                                            Edit
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => handleDeleteClient(client)}
+                                                                            className="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition text-xs font-bold border border-red-200/40"
+                                                                        >
+                                                                            Hapus
+                                                                        </button>
+                                                                    </>
+                                                                )}
+                                                                {user.role === 'partner' && (
                                                                     <button
-                                                                        onClick={() => handleEditForm(form)}
-                                                                        className="px-2.5 py-1 bg-blue-50 text-[#0071e3] border border-blue-200 hover:bg-blue-100 rounded-lg text-xs font-semibold"
+                                                                        onClick={() => handleOpenTeamModal(client)}
+                                                                        className="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-lg transition text-xs font-bold border border-indigo-100"
                                                                     >
-                                                                        Edit
+                                                                        Kelola Tim
                                                                     </button>
-                                                                    <button
-                                                                        onClick={() => handleSubmitToReview(form.id)}
-                                                                        className="px-2.5 py-1 bg-green-50 text-green-600 border border-green-200 hover:bg-green-100 rounded-lg text-xs font-semibold"
-                                                                    >
-                                                                        Submit
-                                                                    </button>
-                                                                </>
-                                                            )}
-
-                                                            {/* Ketua Tim Actions */}
-                                                            {user.role === 'ketua_tim' && form.status === 'pending_approval' && (
+                                                                )}
                                                                 <button
-                                                                    onClick={() => handleOpenReview(form)}
-                                                                    className="px-2.5 py-1 bg-orange-50 text-orange-600 border border-orange-200 hover:bg-orange-100 rounded-lg text-xs font-semibold"
+                                                                    onClick={() => handleSelectClient(client)}
+                                                                    className="px-3.5 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 hover:text-neutral-900 rounded-lg transition text-xs font-bold"
                                                                 >
-                                                                    Review
+                                                                    Buka Perikatan
                                                                 </button>
-                                                            )}
-
-                                                            {/* Supervisor Actions */}
-                                                            {user.role === 'supervisor' && form.status === 'approved_by_leader' && (
-                                                                <button
-                                                                    onClick={() => handleApproveSupervisor(form.id)}
-                                                                    className="px-2.5 py-1 bg-green-50 text-green-600 border border-green-200 hover:bg-green-100 rounded-lg text-xs font-semibold"
-                                                                >
-                                                                    Setujui Final
-                                                                </button>
-                                                            )}
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            ))
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })
                                         )}
                                     </tbody>
                                 </table>
-                            </div>
-
-                            {/* Mobile Card List - Visible on Mobile only */}
-                            <div className="block md:hidden divide-y divide-neutral-100">
-                                {forms.length === 0 ? (
-                                    <div className="py-12 text-center text-neutral-400 text-sm">
-                                        Belum ada data formulir audit.
-                                    </div>
-                                ) : (
-                                    forms.map((form) => (
-                                        <div key={form.id} className="p-5 space-y-4 hover:bg-neutral-50/50 transition">
-                                            <div className="flex justify-between items-start gap-3">
-                                                <div>
-                                                    <button
-                                                        onClick={() => handleOpenDetail(form)}
-                                                        className="font-bold text-neutral-900 hover:text-[#0071e3] text-left text-base"
-                                                    >
-                                                        {form.client_name}
-                                                    </button>
-                                                    <span className="block text-xs text-neutral-500 mt-1">
-                                                        Tahun Buku: <strong className="text-neutral-700">{form.book_year}</strong>
-                                                    </span>
-                                                </div>
-                                                <div className="shrink-0">
-                                                    {renderStatusBadge(form.status)}
-                                                </div>
-                                            </div>
-
-                                            <div className="flex justify-between items-center text-xs text-neutral-500 bg-neutral-50 p-2.5 rounded-lg border border-neutral-100">
-                                                <div>
-                                                    <span className="block text-[9px] text-neutral-400 font-bold uppercase">DISIAPKAN OLEH</span>
-                                                    <span className="font-semibold text-neutral-700">{form.preparer?.name || '-'}</span>
-                                                </div>
-                                                <div className="text-right">
-                                                    <span className="block text-[9px] text-neutral-400 font-bold uppercase">TANGGAL UPDATE</span>
-                                                    <span className="font-semibold text-neutral-700 text-right block">
-                                                        {new Date(form.updated_at).toLocaleDateString('id-ID', {
-                                                            hour: '2-digit', minute: '2-digit'
-                                                        })}
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            {/* Mobile Actions block */}
-                                            <div className="flex flex-wrap gap-2 pt-1.5 justify-end">
-                                                <button
-                                                    onClick={() => handleOpenDetail(form)}
-                                                    className="flex-1 min-w-[70px] text-center py-2 border border-neutral-200 text-neutral-600 hover:text-neutral-900 rounded-xl hover:bg-neutral-50 transition text-xs font-semibold"
-                                                >
-                                                    Detail
-                                                </button>
-
-                                                {/* Anggota Actions */}
-                                                {user.role === 'anggota' && (form.status === 'draft' || form.status === 'rejected') && (
-                                                    <>
-                                                        <button
-                                                            onClick={() => handleEditForm(form)}
-                                                            className="flex-1 min-w-[70px] text-center py-2 bg-blue-50 text-[#0071e3] border border-blue-200 hover:bg-blue-100 rounded-xl text-xs font-bold"
-                                                        >
-                                                            Edit
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleSubmitToReview(form.id)}
-                                                            className="flex-1 min-w-[70px] text-center py-2 bg-green-50 text-green-600 border border-green-200 hover:bg-green-100 rounded-xl text-xs font-bold"
-                                                        >
-                                                            Submit
-                                                        </button>
-                                                    </>
-                                                )}
-
-                                                {/* Ketua Tim Actions */}
-                                                {user.role === 'ketua_tim' && form.status === 'pending_approval' && (
-                                                    <button
-                                                        onClick={() => handleOpenReview(form)}
-                                                        className="flex-1 min-w-[100px] text-center py-2 bg-orange-50 text-orange-600 border border-orange-200 hover:bg-orange-100 rounded-xl text-xs font-bold"
-                                                    >
-                                                        Review
-                                                    </button>
-                                                )}
-
-                                                {/* Supervisor Actions */}
-                                                {user.role === 'supervisor' && form.status === 'approved_by_leader' && (
-                                                    <button
-                                                        onClick={() => handleApproveSupervisor(form.id)}
-                                                        className="flex-1 min-w-[120px] text-center py-2 bg-green-50 text-green-600 border border-green-200 hover:bg-green-100 rounded-xl text-xs font-bold"
-                                                    >
-                                                        Setujui Final
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))
-                                )}
                             </div>
                         </div>
                     )}
                 </div>
             </div>
 
-            {/* Ketua Tim Review Modal */}
+            {/* Ketua Tim / Supervisor / Partner Review Modal */}
             {showReviewModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-900/40 backdrop-blur-sm p-4">
-                    <div className="glass-panel w-full max-w-md p-6 rounded-2xl animate-fade-in-up border border-neutral-200">
-                        <h3 className="text-lg font-bold text-[#1d1d1f] mb-2">Review Formulir: {reviewForm.client_name}</h3>
-                        <p className="text-neutral-500 text-xs mb-4">Pilih keputusan persetujuan untuk data survei pendahuluan ini.</p>
+                    <div className="glass-panel w-full max-w-md p-6 rounded-2xl animate-fade-in-up border border-neutral-200 bg-white">
+                        <h3 className="text-lg font-bold text-[#1d1d1f] mb-2">Review Laporan: {reviewForm.form_type}</h3>
+                        <p className="text-neutral-500 text-xs mb-4">Berikan keputusan persetujuan atau pengembalian dengan catatan untuk Laporan ini.</p>
 
                         <form onSubmit={handleSubmitReview} className="space-y-4">
                             <div>
@@ -428,34 +728,28 @@ export default function Dashboard({ auth, forms }) {
                                     <button
                                         type="button"
                                         onClick={() => setReviewAction('approve')}
-                                        className={`px-4 py-2.5 rounded-lg text-xs font-bold border flex-1 transition ${reviewAction === 'approve'
-                                            ? 'bg-green-50 border-green-500 text-green-600 font-semibold'
-                                            : 'border-neutral-200 bg-white text-neutral-600 hover:text-neutral-800'
-                                            }`}
+                                        className={`flex-1 py-3 px-4 border rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 ${reviewAction === 'approve' ? 'bg-green-50 border-green-500 text-green-700' : 'bg-white border-neutral-200 text-neutral-600 hover:bg-neutral-50'}`}
                                     >
-                                        Setujui & Teruskan
+                                        Setujui (Approve)
                                     </button>
                                     <button
                                         type="button"
                                         onClick={() => setReviewAction('reject')}
-                                        className={`px-4 py-2.5 rounded-lg text-xs font-bold border flex-1 transition ${reviewAction === 'reject'
-                                            ? 'bg-red-50 border-red-500 text-red-600 font-semibold'
-                                            : 'border-neutral-200 bg-white text-neutral-600 hover:text-neutral-800'
-                                            }`}
+                                        className={`flex-1 py-3 px-4 border rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 ${reviewAction === 'reject' ? 'bg-red-50 border-red-500 text-red-700' : 'bg-white border-neutral-200 text-neutral-600 hover:bg-neutral-50'}`}
                                     >
-                                        Tolak / Perlu Koreksi
+                                        Kembalikan (Reject)
                                     </button>
                                 </div>
                             </div>
 
                             {reviewAction === 'reject' && (
                                 <div className="animate-fade-in-up">
-                                    <label className="block text-xs text-neutral-500 font-semibold mb-1">ALASAN PENOLAKAN / INSTRUKSI PERBAIKAN</label>
+                                    <label className="block text-xs text-neutral-500 font-semibold mb-1">CATATAN REJECT / CATATAN PERBAIKAN</label>
                                     <textarea
                                         value={rejectReason}
                                         onChange={(e) => setRejectReason(e.target.value)}
+                                        placeholder="Berikan instruksi detail perbaikan kepada Anggota tim..."
                                         className="w-full custom-input p-3 text-sm h-24"
-                                        placeholder="Masukkan detail perbaikan yang diperlukan..."
                                         required
                                     />
                                 </div>
@@ -464,15 +758,18 @@ export default function Dashboard({ auth, forms }) {
                             <div className="flex justify-end gap-3 pt-4 border-t border-neutral-100">
                                 <button
                                     type="button"
-                                    onClick={() => setShowReviewModal(false)}
-                                    className="px-4 py-2 border border-neutral-200 text-neutral-600 hover:text-neutral-800 rounded-lg hover:bg-neutral-50 text-xs transition"
+                                    onClick={() => {
+                                        setShowReviewModal(false);
+                                        setReviewForm(null);
+                                    }}
+                                    className="px-4 py-2 border border-neutral-200 text-neutral-600 rounded-lg hover:bg-neutral-50 text-xs transition"
                                 >
                                     Batal
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={submittingReview}
-                                    className="btn-glow-indigo text-xs font-semibold px-4 py-2 rounded-lg"
+                                    className={`px-4 py-2 text-white rounded-lg text-xs font-semibold shadow transition ${reviewAction === 'reject' ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'}`}
                                 >
                                     {submittingReview ? 'Memproses...' : 'Kirim Keputusan'}
                                 </button>
@@ -482,76 +779,43 @@ export default function Dashboard({ auth, forms }) {
                 </div>
             )}
 
-            {/* Detail View Modal */}
+            {/* PREVIEW DETAILS MODAL */}
             {viewDetailForm && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-900/40 backdrop-blur-sm p-2 sm:p-4 overflow-y-auto">
-                    <div className="glass-panel w-full max-w-4xl p-4 sm:p-6 rounded-2xl my-8 animate-fade-in-up border border-neutral-200 max-h-[90vh] overflow-y-auto flex flex-col bg-white/95">
-                        
-                        {/* Modal Header */}
-                        <div className="flex justify-between items-start border-b border-neutral-200 pb-4 mb-4 shrink-0">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-900/40 backdrop-blur-sm p-4">
+                    <div className="glass-panel w-full max-w-4xl h-[90vh] max-h-[800px] p-6 rounded-2xl animate-fade-in-up border border-neutral-200 bg-white flex flex-col justify-between">
+                        <div className="flex justify-between items-start border-b border-neutral-200 pb-3 mb-4 shrink-0">
                             <div>
-                                <h3 className="text-xl font-bold text-[#1d1d1f] tracking-tight">{viewDetailForm.client_name}</h3>
-                                <p className="text-neutral-500 text-xs mt-1">Pratinjau detail formulir survei pendahuluan - Tahun Buku {viewDetailForm.book_year}</p>
+                                <h3 className="text-lg font-bold text-[#1d1d1f]">
+                                    Pratinjau Detail Laporan {viewDetailForm.form_type || 'A10'}
+                                </h3>
+                                <p className="text-xs text-neutral-400 font-medium mt-0.5">
+                                    Status Laporan: {renderStatusBadge(viewDetailForm.status)}
+                                </p>
                             </div>
                             <button
                                 onClick={() => setViewDetailForm(null)}
-                                className="px-3.5 py-1.5 border border-neutral-200 text-neutral-600 hover:text-neutral-900 rounded-xl text-xs font-semibold hover:bg-neutral-50 transition"
+                                className="p-1 rounded-lg text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 transition"
                             >
-                                Tutup
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
                             </button>
                         </div>
 
-                        {/* Workflow Tracker (Workflow Visual Indicator) */}
-                        <div className="mb-6 bg-neutral-50/50 p-4 rounded-xl border border-neutral-200/60 shrink-0">
-                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider">Status Alur Kerja:</span>
-                                    {renderStatusBadge(viewDetailForm.status)}
-                                </div>
-                                <div className="flex items-center gap-2 text-xs font-semibold text-neutral-500">
-                                    <div className="flex items-center gap-1">
-                                        <div className={`w-2.5 h-2.5 rounded-full ${viewDetailForm.status === 'draft' ? 'bg-neutral-400 animate-pulse' : 'bg-green-500'}`} />
-                                        <span>Draft</span>
-                                    </div>
-                                    <div className="w-4 h-[1px] bg-neutral-300" />
-                                    <div className="flex items-center gap-1">
-                                        <div className={`w-2.5 h-2.5 rounded-full ${viewDetailForm.status === 'pending_approval' ? 'bg-orange-500 animate-pulse' : viewDetailForm.status === 'draft' ? 'bg-neutral-300' : 'bg-green-500'}`} />
-                                        <span>Review</span>
-                                    </div>
-                                    <div className="w-4 h-[1px] bg-neutral-300" />
-                                    <div className="flex items-center gap-1">
-                                        <div className={`w-2.5 h-2.5 rounded-full ${viewDetailForm.status === 'approved_by_leader' ? 'bg-blue-500 animate-pulse' : (viewDetailForm.status === 'draft' || viewDetailForm.status === 'pending_approval') ? 'bg-neutral-300' : 'bg-green-500'}`} />
-                                        <span>Ketua Tim</span>
-                                    </div>
-                                    <div className="w-4 h-[1px] bg-neutral-300" />
-                                    <div className="flex items-center gap-1">
-                                        <div className={`w-2.5 h-2.5 rounded-full ${viewDetailForm.status === 'approved' ? 'bg-green-500' : 'bg-neutral-300'}`} />
-                                        <span>Final</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Rejection comment banner */}
-                        {viewDetailForm.status === 'rejected' && viewDetailForm.reject_reason && (
-                            <div className="bg-red-50 border border-red-200 text-red-600 p-4 rounded-xl mb-6 shrink-0">
-                                <h4 className="text-xs font-bold uppercase tracking-wider text-red-500 mb-1">Catatan Penolakan Ketua Tim:</h4>
-                                <p className="text-sm">{viewDetailForm.reject_reason}</p>
-                            </div>
-                        )}
-
                         {/* Custom Segmented Control (Tabs Navigation) */}
                         <div className="flex bg-neutral-100 p-1 rounded-xl mb-6 overflow-x-auto whitespace-nowrap scrollbar-none gap-1 shrink-0">
-                            {['Ringkasan Penugasan', 'Pemahaman SA 210', 'Latar Belakang & GC', 'Akuntansi & Bantuan Klien', 'Evaluasi Kualitatif'].map((tab, idx) => (
+                            {(viewDetailForm.form_type === 'D10'
+                                ? ['Ringkasan Penugasan', 'Kalkulator Materialitas (A)', 'Performance & Tolerable Limit (B, C)', 'Mapping Saldo Akun (D)']
+                                : ['Ringkasan Penugasan', 'Pemahaman SA 210', 'Latar Belakang & GC', 'Akuntansi & Bantuan Klien', 'Evaluasi Kualitatif']
+                            ).map((tab, idx) => (
                                 <button
                                     key={tab}
                                     type="button"
                                     onClick={() => setActiveDetailTab(idx)}
-                                    className={`flex-1 py-2 px-4 text-xs font-bold rounded-lg transition-all duration-200 ${
-                                        activeDetailTab === idx 
-                                            ? 'bg-white text-[#0071e3] shadow-sm' 
+                                    className={`flex-1 py-2 px-4 text-xs font-bold rounded-lg transition-all duration-200 ${activeDetailTab === idx
+                                            ? 'bg-white text-[#0071e3] shadow-sm'
                                             : 'text-neutral-500 hover:text-neutral-800'
-                                    }`}
+                                        }`}
                                 >
                                     {tab}
                                 </button>
@@ -560,39 +824,33 @@ export default function Dashboard({ auth, forms }) {
 
                         {/* Tabs Content - Scrollable area */}
                         <div className="flex-1 overflow-y-auto pr-1 text-sm space-y-6">
-                            
+
                             {/* Tab 1: Ringkasan Penugasan */}
                             {activeDetailTab === 0 && (
                                 <div className="space-y-6 animate-fade-in-up">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        {/* Client details card */}
                                         <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm space-y-4">
                                             <h4 className="text-xs font-extrabold uppercase tracking-wider text-neutral-400">Informasi Klien</h4>
                                             <div className="space-y-3">
                                                 <div>
                                                     <span className="text-[10px] text-neutral-400 font-bold block">NAMA KLIEN</span>
-                                                    <span className="text-neutral-900 font-extrabold text-base">{viewDetailForm.client_name}</span>
+                                                    <span className="text-neutral-900 font-extrabold text-base">{activeClient?.name}</span>
                                                 </div>
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div>
                                                         <span className="text-[10px] text-neutral-400 font-bold block">TAHUN BUKU</span>
-                                                        <span className="text-neutral-800 font-bold text-sm">{viewDetailForm.book_year}</span>
+                                                        <span className="text-neutral-800 font-bold text-sm">{activeClient?.book_year}</span>
                                                     </div>
                                                     <div>
-                                                        <span className="text-[10px] text-neutral-400 font-bold block">JADWAL/SKEDUL</span>
-                                                        <span className="text-neutral-800 font-bold text-sm">{viewDetailForm.schedule || '-'}</span>
+                                                        <span className="text-[10px] text-neutral-400 font-bold block">SKEDUL / JASA</span>
+                                                        <span className="text-neutral-800 font-bold text-sm">{activeClient?.schedule || '-'}</span>
                                                     </div>
-                                                </div>
-                                                <div>
-                                                    <span className="text-[10px] text-neutral-400 font-bold block">RUANG LINGKUP JASA</span>
-                                                    <span className="text-neutral-800 font-semibold text-xs">{viewDetailForm.section_data?.section_2_c || '-'}</span>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        {/* Summary Status card */}
                                         <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm space-y-4">
-                                            <h4 className="text-xs font-extrabold uppercase tracking-wider text-neutral-400">Tim Audit & Kesimpulan</h4>
+                                            <h4 className="text-xs font-extrabold uppercase tracking-wider text-neutral-400">Tim Audit & Kesimpulan Laporan</h4>
                                             <div className="space-y-3">
                                                 <div className="grid grid-cols-3 gap-2 text-xs">
                                                     <div className="bg-neutral-50 p-2 rounded-xl border border-neutral-100/80">
@@ -610,7 +868,7 @@ export default function Dashboard({ auth, forms }) {
                                                 </div>
                                                 <div className="grid grid-cols-2 gap-4 pt-2 border-t border-neutral-100">
                                                     <div className="bg-red-50/50 p-2.5 rounded-xl border border-red-100 text-center">
-                                                        <span className="text-[9px] text-red-500 block font-bold uppercase tracking-wider">TINGKAT RISIKO</span>
+                                                        <span className="text-[9px] text-red-500 block font-bold uppercase tracking-wider">LEVEL RISIKO</span>
                                                         <span className="text-red-600 font-extrabold text-sm mt-0.5 block">{viewDetailForm.section_data?.section_b?.level_risiko || '-'}</span>
                                                     </div>
                                                     <div className="bg-green-50/50 p-2.5 rounded-xl border border-green-100 text-center">
@@ -621,115 +879,161 @@ export default function Dashboard({ auth, forms }) {
                                             </div>
                                         </div>
                                     </div>
-
-                                    {/* Prakiraan Kontrak & Jadwal Pembayaran */}
-                                    <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm space-y-4">
-                                        <h4 className="text-xs font-extrabold uppercase tracking-wider text-neutral-400">Prakiraan Kontrak & Jadwal Pembayaran</h4>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                                            <div>
-                                                <span className="text-[10px] text-neutral-400 font-bold block uppercase">PRAKIRAAN NILAI KONTRAK</span>
-                                                <span className="text-neutral-800 font-bold text-sm block mt-0.5">{viewDetailForm.section_data?.section_2_h?.nilai_kontrak || '-'}</span>
-                                            </div>
-                                            <div>
-                                                <span className="text-[10px] text-neutral-400 font-bold block uppercase">TAHAP PEMBAYARAN</span>
-                                                <p className="text-neutral-700 font-medium block mt-0.5 whitespace-pre-line">{viewDetailForm.section_data?.section_2_h?.tahap_pembayaran || '-'}</p>
-                                            </div>
-                                        </div>
-                                        {viewDetailForm.section_data?.section_2_h?.jadwal_pelunasan && viewDetailForm.section_data?.section_2_h?.jadwal_pelunasan?.length > 0 && (
-                                            <div className="border-t border-neutral-100 pt-3 mt-1 text-xs">
-                                                <span className="text-[10px] text-neutral-400 font-bold block uppercase mb-2">JADWAL PELUNASAN FEE</span>
-                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                    {viewDetailForm.section_data.section_2_h.jadwal_pelunasan.map((item, idx) => (
-                                                        <div key={idx} className="bg-neutral-50 p-2.5 rounded-xl border border-neutral-100/80">
-                                                            <div className="flex justify-between items-center mb-1">
-                                                                <span className="font-bold text-neutral-700 text-[10px] uppercase">Termin {item.no}</span>
-                                                                <span className="text-[#0071e3] font-bold text-[10px]">{item.persen || ''}</span>
-                                                            </div>
-                                                            <div className="grid grid-cols-2 gap-2 text-[10px]">
-                                                                <div>
-                                                                    <span className="text-neutral-400 block uppercase">Tanggal/Bulan</span>
-                                                                    <span className="text-neutral-800 font-bold">{item.tanggal || '-'}</span>
-                                                                </div>
-                                                                <div>
-                                                                    <span className="text-neutral-400 block uppercase">Nominal</span>
-                                                                    <span className="text-neutral-800 font-bold">{item.nominal || '-'}</span>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Auditor Pendahulu Subcard */}
-                                    {viewDetailForm.section_data?.section_2_d?.nama_kap && (
-                                        <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm space-y-3">
-                                            <h4 className="text-xs font-extrabold uppercase tracking-wider text-neutral-400">Informasi Auditor Pendahulu (KAP Lain)</h4>
-                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs pt-1">
-                                                <div>
-                                                    <span className="text-[10px] text-neutral-400 font-bold block uppercase">NAMA KAP</span>
-                                                    <span className="text-neutral-800 font-bold text-sm block mt-0.5">{viewDetailForm.section_data.section_2_d.nama_kap}</span>
-                                                </div>
-                                                <div>
-                                                    <span className="text-[10px] text-neutral-400 font-bold block uppercase">NAMA AP (PARTNER)</span>
-                                                    <span className="text-neutral-800 font-bold text-sm block mt-0.5">{viewDetailForm.section_data.section_2_d.nama_ap || '-'}</span>
-                                                </div>
-                                                <div>
-                                                    <span className="text-[10px] text-neutral-400 font-bold block uppercase">ALAMAT KAP</span>
-                                                    <span className="text-neutral-800 font-medium block mt-0.5">{viewDetailForm.section_data.section_2_d.alamat || '-'}</span>
-                                                </div>
-                                            </div>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs border-t border-neutral-100 pt-3 mt-1">
-                                                <div>
-                                                    <span className="text-[10px] text-neutral-400 block font-bold uppercase">ALASAN PENGGANTIAN AUDITOR</span>
-                                                    <p className="text-neutral-700 mt-1 font-medium">{viewDetailForm.section_data.section_2_d.alasan_penggantian || '-'}</p>
-                                                </div>
-                                                <div>
-                                                    <span className="text-[10px] text-neutral-400 block font-bold uppercase">BANTUAN DARI AUDITOR PENDAHULU</span>
-                                                    <p className="text-neutral-700 mt-1 font-medium">{viewDetailForm.section_data.section_2_d.bantuan_pendahulu || '-'}</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
                                 </div>
                             )}
 
-                            {/* Tab 2: Pemahaman SA 210 */}
-                            {activeDetailTab === 1 && (
-                                <div className="space-y-4 animate-fade-in-up">
-                                    <div className="flex justify-between items-center pb-2 border-b border-neutral-100">
-                                        <h4 className="text-sm font-bold text-[#0071e3]">Cakupan Ketentuan Perikatan (SA 210)</h4>
-                                        <span className="text-[10px] text-neutral-500 font-bold bg-neutral-100 border border-neutral-200/60 px-2.5 py-1 rounded-full uppercase tracking-wider">Checklist 15 Parameter</span>
+                            {/* D10 - TAB 2: kalkulator */}
+                            {activeDetailTab === 1 && viewDetailForm.form_type === 'D10' && (
+                                <div className="space-y-6 animate-fade-in-up">
+                                    <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm space-y-4">
+                                        <h4 className="text-sm font-extrabold text-neutral-800 border-b pb-2">A. Perhitungan Materialitas Keseluruhan (Overall Materiality)</h4>
+                                        <div className="grid grid-cols-2 gap-4 text-xs">
+                                            <div>
+                                                <span className="text-neutral-400 block uppercase font-bold text-[9px]">KONDISI KEUANGAN KLIEN</span>
+                                                <span className="text-neutral-700 font-bold text-xs uppercase">{viewDetailForm.section_data?.jenis_kondisi || '-'}</span>
+                                            </div>
+                                            <div>
+                                                <span className="text-neutral-400 block uppercase font-bold text-[9px]">BENCHMARK PILIHAN</span>
+                                                <span className="text-[#0071e3] font-extrabold text-xs uppercase">{viewDetailForm.section_data?.benchmark?.replace('_', ' ') || '-'}</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="overflow-x-auto pt-2">
+                                            <table className="w-full text-left text-xs border-collapse">
+                                                <thead>
+                                                    <tr className="border-b border-neutral-200 text-neutral-400 font-bold uppercase tracking-wider text-[9px]">
+                                                        <th className="py-2 px-3">FAKTOR BENCHMARK</th>
+                                                        <th className="py-2 px-3 w-40 text-right">NOMINAL (RP)</th>
+                                                        <th className="py-2 px-3 w-20 text-right">%</th>
+                                                        <th className="py-2 px-3 w-40 text-right">HASIL</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-neutral-100">
+                                                    {viewDetailForm.section_data?.benchmarks && Object.entries(viewDetailForm.section_data.benchmarks).map(([key, value]) => {
+                                                        const isSelected = viewDetailForm.section_data.benchmark === key;
+                                                        return (
+                                                            <tr key={key} className={`hover:bg-neutral-50/50 ${isSelected ? 'bg-blue-50/30' : ''}`}>
+                                                                <td className="py-2 px-3 font-semibold text-neutral-700 capitalize">{key.replace('_', ' ')}</td>
+                                                                <td className="py-2 px-3 text-right text-neutral-600">{formatCurrency(value.nominal)}</td>
+                                                                <td className="py-2 px-3 text-right text-neutral-600">{value.persen}%</td>
+                                                                <td className="py-2 px-3 text-right font-bold text-neutral-800">{formatCurrency(value.hasil)}</td>
+                                                            </tr>
+                                                        );
+                                                    })}
+                                                </tbody>
+                                            </table>
+                                        </div>
+
+                                        <div className="bg-neutral-50 p-4 rounded-xl border border-neutral-200 flex justify-between items-center text-xs">
+                                            <span className="text-neutral-500 font-extrabold uppercase">Pembulatan Materialitas Keseluruhan (Overall Materiality)</span>
+                                            <span className="text-base font-extrabold text-neutral-900">{formatCurrency(viewDetailForm.section_data?.overall_materiality)}</span>
+                                        </div>
                                     </div>
-                                    
+                                </div>
+                            )}
+
+                            {/* D10 - TAB 3: limits */}
+                            {activeDetailTab === 2 && viewDetailForm.form_type === 'D10' && (
+                                <div className="space-y-6 animate-fade-in-up">
+                                    <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm space-y-4">
+                                        <h4 className="text-sm font-extrabold text-neutral-800 border-b pb-2">B. Materialitas Pelaksanaan & Pertimbangan Kualitatif</h4>
+                                        
+                                        <div className="space-y-2 text-xs">
+                                            {viewDetailForm.section_data?.qualitative_questions?.map((item) => (
+                                                <div key={item.no} className="p-3 bg-neutral-50/50 border border-neutral-200/60 rounded-xl flex justify-between items-center text-xs gap-3">
+                                                    <div>
+                                                        <span className="text-neutral-400 font-bold block text-[9px]">RISK FACTOR {item.no}</span>
+                                                        <p className="text-neutral-700 font-semibold leading-relaxed">{item.description}</p>
+                                                    </div>
+                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold border uppercase shrink-0 ${item.value === 'Ya' ? 'bg-red-50 border-red-200 text-red-600' : 'bg-green-50 border-green-200 text-green-600'}`}>{item.value}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4 border-t border-neutral-100 pt-4 text-xs">
+                                            <div className="bg-neutral-50 p-3 rounded-xl border border-neutral-200 flex justify-between items-center">
+                                                <span className="text-neutral-500 font-bold uppercase text-[10px]">PERSENTASE PELAKSANAAN</span>
+                                                <span className="text-neutral-800 font-extrabold text-xs">{viewDetailForm.section_data?.performance_percent}%</span>
+                                            </div>
+                                            <div className="bg-blue-50/50 p-3 rounded-xl border border-blue-100 flex justify-between items-center">
+                                                <span className="text-blue-700 font-bold uppercase text-[10px]">NOMINAL PELAKSANAAN</span>
+                                                <span className="text-blue-800 font-extrabold text-sm">{formatCurrency(viewDetailForm.section_data?.performance_materiality)}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm space-y-4">
+                                        <h4 className="text-sm font-extrabold text-neutral-800 border-b pb-2">C. Batas Salah Saji Yang Tidak Dikoreksi (Clearly Trivial)</h4>
+                                        <div className="grid grid-cols-2 gap-4 text-xs">
+                                            <div className="bg-neutral-50 p-3 rounded-xl border border-neutral-200 flex justify-between items-center">
+                                                <span className="text-neutral-500 font-bold uppercase text-[10px]">PERSENTASE AMBANG KESALAHAN</span>
+                                                <span className="text-neutral-800 font-extrabold text-xs">{viewDetailForm.section_data?.tolerable_percent}%</span>
+                                            </div>
+                                            <div className="bg-emerald-50/50 p-3 rounded-xl border border-emerald-100 flex justify-between items-center">
+                                                <span className="text-emerald-700 font-bold uppercase text-[10px]">NOMINAL TOLERABLE ERROR</span>
+                                                <span className="text-emerald-800 font-extrabold text-sm">{formatCurrency(viewDetailForm.section_data?.tolerable_error)}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* D10 - TAB 4: accounts */}
+                            {activeDetailTab === 3 && viewDetailForm.form_type === 'D10' && (
+                                <div className="space-y-6 animate-fade-in-up">
+                                    <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm space-y-4">
+                                        <h4 className="text-sm font-extrabold text-neutral-800 border-b pb-2">D. Materialitas Pelaksanaan Pada Tingkat Saldo Akun</h4>
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-left text-xs border-collapse">
+                                                <thead>
+                                                    <tr className="border-b border-neutral-200 text-neutral-400 font-bold uppercase tracking-wider text-[9px]">
+                                                        <th className="py-2 px-3">NAMA AKUN</th>
+                                                        <th className="py-2 px-3 text-right">NILAI INHOUSE (RP)</th>
+                                                        <th className="py-2 px-3 text-center">PERSENTASE</th>
+                                                        <th className="py-2 px-3 text-right">NOMINAL MATERIALITAS</th>
+                                                        <th className="py-2 px-3 text-center">MATERIL / TIDAK</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-neutral-100">
+                                                    {viewDetailForm.section_data?.accounts?.map((acc, index) => {
+                                                        const isMaterial = acc.status === 'Material';
+                                                        return (
+                                                            <tr key={index} className="hover:bg-neutral-50/20">
+                                                                <td className="py-2.5 px-3 font-semibold text-neutral-700">{acc.nama}</td>
+                                                                <td className="py-2.5 px-3 text-right text-neutral-600">{formatCurrency(acc.inhouse)}</td>
+                                                                <td className="py-2.5 px-3 text-center font-bold">{acc.persen}%</td>
+                                                                <td className="py-2.5 px-3 text-right font-bold text-neutral-700">{formatCurrency(acc.nominal)}</td>
+                                                                <td className="py-2.5 px-3 text-center">
+                                                                    <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-extrabold border uppercase ${isMaterial ? 'bg-red-50 text-red-600 border-red-200' : 'bg-neutral-50 text-neutral-500 border-neutral-200'}`}>{acc.status || 'Tidak'}</span>
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* A10 TABS PREVIEW (Compatibility) */}
+                            {activeDetailTab === 1 && (!viewDetailForm.form_type || viewDetailForm.form_type === 'A10') && (
+                                <div className="space-y-4 animate-fade-in-up">
+                                    <h4 className="text-sm font-bold text-[#0071e3] border-b pb-2">I. Ketentuan Perikatan (SA 210)</h4>
                                     <div className="grid grid-cols-1 gap-2 text-xs">
                                         {viewDetailForm.section_data?.section_1?.map((item) => {
                                             const hasData = item.date && item.initial;
                                             return (
-                                                <div key={item.no} className="bg-white p-3.5 rounded-xl border border-neutral-200/80 hover:border-blue-100 flex items-start gap-4 hover:bg-neutral-50/20 transition-all duration-200 shadow-sm">
-                                                    <div className={`w-6 h-6 rounded-full shrink-0 flex items-center justify-center text-xs font-bold ${
-                                                        hasData 
-                                                            ? 'bg-green-100 text-green-700 border border-green-200' 
-                                                            : 'bg-neutral-100 text-neutral-400 border border-neutral-200/60'
-                                                    }`}>
+                                                <div key={item.no} className="bg-white p-3 rounded-xl border border-neutral-200/80 flex items-start gap-4 shadow-xs">
+                                                    <div className={`w-5 h-5 rounded-full shrink-0 flex items-center justify-center text-xs font-bold ${hasData ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-neutral-100 text-neutral-400'}`}>
                                                         {hasData ? '✓' : item.no}
                                                     </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="text-xs text-neutral-700 font-semibold leading-relaxed">{item.description}</p>
-                                                        {(item.date || item.initial) && (
-                                                            <div className="flex flex-wrap gap-2 mt-2.5">
-                                                                {item.date && (
-                                                                    <span className="inline-flex items-center gap-1.5 text-[10px] bg-blue-50 text-[#0071e3] border border-blue-100 px-2.5 py-0.5 rounded-full font-bold">
-                                                                        <svg className="w-3 h-3 text-[#0071e3]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                                                                        Tanggal: {item.date}
-                                                                    </span>
-                                                                )}
-                                                                {item.initial && (
-                                                                    <span className="inline-flex items-center gap-1 text-[10px] bg-[#0071e3]/10 text-[#0071e3] border border-[#0071e3]/20 px-2.5 py-0.5 rounded-full font-bold">
-                                                                        Inisial: {item.initial}
-                                                                    </span>
-                                                                )}
+                                                    <div className="flex-1">
+                                                        <p className="text-xs text-neutral-700 font-semibold">{item.description}</p>
+                                                        {hasData && (
+                                                            <div className="flex gap-2 mt-1.5 text-[10px] text-neutral-500">
+                                                                <span>Tanggal: {item.date}</span>
+                                                                <span>Inisial: {item.initial}</span>
                                                             </div>
                                                         )}
                                                     </div>
@@ -740,214 +1044,46 @@ export default function Dashboard({ auth, forms }) {
                                 </div>
                             )}
 
-                            {/* Tab 3: Latar Belakang & Kelangsungan Hidup */}
-                            {activeDetailTab === 2 && (
+                            {activeDetailTab === 2 && (!viewDetailForm.form_type || viewDetailForm.form_type === 'A10') && (
                                 <div className="space-y-6 animate-fade-in-up">
-                                    {/* Bisnis info cards */}
                                     <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm space-y-4">
-                                        <h4 className="text-xs font-extrabold uppercase tracking-wider text-neutral-400">Deskripsi & Struktur Klien</h4>
-                                        <div className="space-y-3">
-                                            <div>
-                                                <span className="text-[10px] text-neutral-400 font-bold block">PROFIL SINGKAT BISNIS KLIEN</span>
-                                                <p className="text-neutral-700 leading-relaxed font-semibold text-xs mt-0.5">{viewDetailForm.section_data?.section_2_a?.description || '-'}</p>
-                                            </div>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-neutral-100 pt-3">
-                                                <div>
-                                                    <span className="text-[10px] text-neutral-400 font-bold block">ALAMAT OPERASIONAL</span>
-                                                    <p className="text-neutral-700 text-xs font-bold mt-0.5">{viewDetailForm.section_data?.section_2_a?.address || '-'}</p>
-                                                </div>
-                                                <div>
-                                                    <span className="text-[10px] text-neutral-400 font-bold block">SUMBER PENDAPATAN UTAMA</span>
-                                                    <p className="text-neutral-700 text-xs font-bold mt-0.5">{viewDetailForm.section_data?.section_2_a?.revenue_sources || '-'}</p>
-                                                </div>
-                                            </div>
-                                        </div>
+                                        <h4 className="text-xs font-extrabold uppercase tracking-wider text-neutral-400">Deskripsi Klien</h4>
+                                        <p className="text-neutral-700 leading-relaxed font-semibold text-xs">{viewDetailForm.section_data?.section_2_a?.description || '-'}</p>
                                     </div>
 
-                                    {/* Dewan / Manajemen cards */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        {/* Komisaris */}
-                                        <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm space-y-3">
-                                            <h4 className="text-xs font-extrabold uppercase tracking-wider text-neutral-400">Dewan Komisaris</h4>
-                                            <div className="divide-y divide-neutral-100">
-                                                {viewDetailForm.section_data?.section_2_a?.dewan_komisaris?.map((kom, index) => (
-                                                    <div key={index} className="py-2 flex justify-between items-center text-xs">
-                                                        <span className="text-neutral-500 font-semibold">{kom.jabatan}</span>
-                                                        <span className="text-neutral-900 font-bold">{kom.nama_2024 || kom.nama_2023 || '-'}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                        {/* Direksi */}
-                                        <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm space-y-3">
-                                            <h4 className="text-xs font-extrabold uppercase tracking-wider text-neutral-400">Dewan Direksi</h4>
-                                            <div className="divide-y divide-neutral-100">
-                                                {viewDetailForm.section_data?.section_2_a?.dewan_direksi?.map((dir, index) => (
-                                                    <div key={index} className="py-2 flex justify-between items-center text-xs">
-                                                        <span className="text-neutral-500 font-semibold">{dir.jabatan}</span>
-                                                        <span className="text-neutral-900 font-bold">{dir.nama_2024 || dir.nama_2023 || '-'}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Going concern questions block */}
                                     <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm space-y-4">
-                                        <div className="flex justify-between items-center border-b border-neutral-100 pb-2">
-                                            <h4 className="text-xs font-extrabold uppercase tracking-wider text-neutral-400">Indikator Going Concern (Kelangsungan Usaha)</h4>
-                                            <span className="text-[10px] text-green-700 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full font-bold">Evaluasi Risiko</span>
-                                        </div>
-                                        
+                                        <h4 className="text-xs font-extrabold uppercase tracking-wider text-neutral-400">Indikator Going Concern (Kelangsungan Usaha)</h4>
                                         <div className="space-y-3 text-xs">
                                             {viewDetailForm.section_data?.section_2_e?.going_concern?.map((item) => (
-                                                <div key={item.no} className="p-3.5 bg-neutral-50/50 border border-neutral-200/60 rounded-xl flex flex-col md:flex-row gap-3 justify-between items-start md:items-center">
-                                                    <div className="flex-1 min-w-0 pr-2">
-                                                        <span className="text-neutral-400 font-bold block text-[9px] uppercase">PERTANYAAN {item.no}</span>
-                                                        <p className="text-neutral-700 font-bold mt-0.5 leading-relaxed">{item.description}</p>
-                                                        {item.notes && (
-                                                            <p className="text-neutral-500 italic mt-1 bg-white p-2 rounded border border-neutral-100 text-[11px] font-medium">
-                                                                Catatan: {item.notes}
-                                                            </p>
-                                                        )}
+                                                <div key={item.no} className="p-3 bg-neutral-50/50 border border-neutral-200/60 rounded-xl flex justify-between items-center gap-3">
+                                                    <div className="flex-1 pr-2">
+                                                        <p className="text-neutral-700 font-bold">{item.no} {item.description}</p>
+                                                        {item.notes && <p className="text-neutral-400 text-[10px] mt-0.5">Catatan: {item.notes}</p>}
                                                     </div>
-                                                    <span className={`px-2.5 py-1 rounded-lg text-xs font-bold border shrink-0 ${
-                                                        item.value === 'Ya' 
-                                                            ? 'bg-red-50 border-red-200 text-red-600' 
-                                                            : 'bg-green-50 border-green-200 text-green-600'
-                                                    }`}>
-                                                        {item.value}
-                                                    </span>
+                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold border uppercase shrink-0 ${item.value === 'Ya' ? 'bg-red-50 border-red-200 text-red-600' : 'bg-green-50 border-green-200 text-green-600'}`}>{item.value}</span>
                                                 </div>
                                             ))}
-                                        </div>
-
-                                        <div className="bg-neutral-50 p-4 rounded-xl border border-neutral-200 mt-2">
-                                            <span className="text-[9px] text-neutral-400 font-bold block uppercase tracking-wider">Kesimpulan Kelangsungan Hidup Klien</span>
-                                            <p className="text-neutral-800 font-bold italic text-xs mt-1 leading-relaxed">"{viewDetailForm.section_data?.section_2_e?.going_concern_conclusion || '-'}"</p>
-                                        </div>
-                                    </div>
-
-                                    {/* Section 2.b: Anak Perusahaan & Hubungan Istimewa */}
-                                    <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm space-y-4">
-                                        <div className="flex justify-between items-center border-b border-neutral-100 pb-2">
-                                            <h4 className="text-xs font-extrabold uppercase tracking-wider text-neutral-400">Anak Perusahaan & Hubungan Istimewa</h4>
-                                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold border uppercase ${
-                                                viewDetailForm.section_data?.section_2_b?.has_subsidiary === 'Ya'
-                                                    ? 'bg-orange-50 border-orange-200 text-orange-600'
-                                                    : 'bg-neutral-50 border-neutral-200 text-neutral-600'
-                                            }`}>
-                                                {viewDetailForm.section_data?.section_2_b?.has_subsidiary === 'Ya' ? 'Ada Afiliasi' : 'Tidak Ada Afiliasi'}
-                                            </span>
-                                        </div>
-                                        {viewDetailForm.section_data?.section_2_b?.has_subsidiary === 'Ya' && viewDetailForm.section_data?.section_2_b?.related_parties?.length > 0 && (
-                                            <div className="overflow-x-auto border border-neutral-100 rounded-xl">
-                                                <table className="w-full text-left text-xs border-collapse">
-                                                    <thead>
-                                                        <tr className="bg-neutral-50 border-b border-neutral-100 text-neutral-400 font-bold uppercase tracking-wider text-[9px]">
-                                                            <th className="py-2 px-3 w-10 text-center">No</th>
-                                                            <th className="py-2 px-3">Nama Pihak</th>
-                                                            <th className="py-2 px-3">Hubungan</th>
-                                                            <th className="py-2 px-3">Sifat Transaksi</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody className="divide-y divide-neutral-100">
-                                                        {viewDetailForm.section_data.section_2_b.related_parties.map((party, idx) => (
-                                                            <tr key={idx} className="hover:bg-neutral-50/20">
-                                                                <td className="py-2 px-3 text-center text-neutral-500 font-bold">{party.no || idx + 1}</td>
-                                                                <td className="py-2 px-3 text-neutral-800 font-bold">{party.nama || '-'}</td>
-                                                                <td className="py-2 px-3 text-neutral-600">{party.hubungan || '-'}</td>
-                                                                <td className="py-2 px-3 text-neutral-600">{party.sifat_transaksi || '-'}</td>
-                                                            </tr>
-                                                        ))}
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Section 2.g: Penggunaan Spesialis */}
-                                    <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm space-y-3">
-                                        <h4 className="text-xs font-extrabold uppercase tracking-wider text-neutral-400">Penggunaan Spesialis</h4>
-                                        <div className="bg-neutral-50 p-3.5 rounded-xl border border-neutral-150 text-xs">
-                                            <p className="text-neutral-700 leading-relaxed font-semibold">{viewDetailForm.section_data?.section_2_g || 'Tidak ada'}</p>
                                         </div>
                                     </div>
                                 </div>
                             )}
 
-                            {/* Tab 4: Akuntansi & Bantuan Klien */}
-                            {activeDetailTab === 3 && (
+                            {activeDetailTab === 3 && (!viewDetailForm.form_type || viewDetailForm.form_type === 'A10') && (
                                 <div className="space-y-6 animate-fade-in-up">
-                                    {/* Section 2.f: Akuntansi & Pelaporan Keuangan */}
                                     <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm space-y-4">
-                                        <h4 className="text-xs font-extrabold uppercase tracking-wider text-neutral-400">Akuntansi & Pelaporan Keuangan</h4>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                                        <h4 className="text-xs font-extrabold uppercase tracking-wider text-neutral-400">Akuntansi & SOP</h4>
+                                        <div className="grid grid-cols-2 gap-4 text-xs">
                                             <div>
-                                                <span className="text-[10px] text-neutral-400 font-bold block">BUKU PEDOMAN AKUNTANSI / SOP</span>
-                                                <p className="text-neutral-800 font-bold mt-1 leading-relaxed">{viewDetailForm.section_data?.section_2_f?.buku_pedoman || '-'}</p>
+                                                <span className="text-neutral-400 font-bold block uppercase text-[10px]">BUKU PEDOMAN</span>
+                                                <p className="text-neutral-800 font-bold mt-1">{viewDetailForm.section_data?.section_2_f?.buku_pedoman || '-'}</p>
                                             </div>
                                             <div>
-                                                <span className="text-[10px] text-neutral-400 font-bold block">METODE PENGOLAHAN DATA</span>
-                                                <p className="text-neutral-800 font-bold mt-1 leading-relaxed">{viewDetailForm.section_data?.section_2_f?.cara_mengolah_data || '-'}</p>
+                                                <span className="text-neutral-400 font-bold block uppercase text-[10px]">CARA MENGOLAH</span>
+                                                <p className="text-neutral-800 font-bold mt-1">{viewDetailForm.section_data?.section_2_f?.cara_mengolah_data || '-'}</p>
                                             </div>
                                         </div>
-                                        <div className="border-t border-neutral-100 pt-3 mt-1 text-xs">
-                                            <span className="text-[10px] text-neutral-400 font-bold block">SIKLUS TRANSAKSI SIGNIFIKAN (CYCLES)</span>
-                                            <p className="text-neutral-800 font-semibold mt-1 leading-relaxed">{viewDetailForm.section_data?.section_2_f?.cycles || '-'}</p>
-                                        </div>
-                                        
-                                        {viewDetailForm.section_data?.section_2_f?.auditable && viewDetailForm.section_data?.section_2_f?.auditable?.length > 0 && (
-                                            <div className="border-t border-neutral-100 pt-3 mt-1 text-xs space-y-2">
-                                                <span className="text-[10px] text-neutral-400 font-bold block uppercase mb-2">Kelayakan Audit (Auditable Checklist)</span>
-                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                    {viewDetailForm.section_data.section_2_f.auditable.map((item, idx) => (
-                                                        <div key={idx} className="bg-neutral-50 p-3 rounded-xl border border-neutral-100 flex justify-between items-center gap-2">
-                                                            <span className="text-neutral-700 font-semibold text-xs leading-relaxed">{item.no} {item.description}</span>
-                                                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold border uppercase shrink-0 ${
-                                                                item.value === 'Ya' 
-                                                                    ? 'bg-green-50 border-green-200 text-green-700' 
-                                                                    : 'bg-neutral-50 border-neutral-200 text-neutral-600'
-                                                            }`}>
-                                                                {item.value}
-                                                            </span>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
                                     </div>
 
-                                    {/* Section 5: Bantuan Klien Info */}
-                                    <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm space-y-4">
-                                        <h4 className="text-xs font-extrabold uppercase tracking-wider text-neutral-400">Pemberian Informasi & Referensi</h4>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                                            <div>
-                                                <span className="text-[10px] text-neutral-400 font-bold block uppercase">Staf Introduksi</span>
-                                                <span className="text-neutral-800 font-bold block mt-0.5">{viewDetailForm.section_data?.section_5?.staf_introduksi || '-'}</span>
-                                            </div>
-                                            <div>
-                                                <span className="text-[10px] text-neutral-400 font-bold block uppercase">Referensi Pihak Lain</span>
-                                                <ul className="list-disc list-inside text-neutral-700 mt-1 font-semibold space-y-1">
-                                                    {(viewDetailForm.section_data?.section_5?.referensi || []).map((ref, i) => ref && (
-                                                        <li key={i}>{ref}</li>
-                                                    ))}
-                                                </ul>
-                                            </div>
-                                        </div>
-                                        {viewDetailForm.section_data?.section_5?.prosedur_lain?.length > 0 && (
-                                            <div className="border-t border-neutral-100 pt-3 mt-1 text-xs">
-                                                <span className="text-[10px] text-neutral-400 font-bold block uppercase mb-1">Prosedur Evaluasi Tambahan</span>
-                                                <ul className="list-decimal list-inside text-neutral-700 mt-1 font-semibold space-y-1">
-                                                    {viewDetailForm.section_data.section_5.prosedur_lain.map((proc, i) => proc && (
-                                                        <li key={i}>{proc}</li>
-                                                    ))}
-                                                </ul>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Section 5 Checklist Dokumen */}
                                     {viewDetailForm.section_data?.section_5?.bantuan_klien && (
                                         <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm space-y-3">
                                             <h4 className="text-xs font-extrabold uppercase tracking-wider text-neutral-400">Daftar Dokumen Bantuan Klien</h4>
@@ -955,19 +1091,9 @@ export default function Dashboard({ auth, forms }) {
                                                 {viewDetailForm.section_data.section_5.bantuan_klien.map((doc, idx) => (
                                                     <div key={idx} className="bg-white p-3 rounded-lg border border-neutral-100/80 flex justify-between items-center gap-4 text-xs hover:border-blue-100 transition">
                                                         <div className="flex-1">
-                                                            <span className="text-[9px] text-neutral-400 font-bold block">DOKUMEN {doc.no}</span>
-                                                            <span className="text-neutral-700 font-semibold mt-0.5 block">{doc.description}</span>
-                                                            {doc.notes && (
-                                                                <span className="text-[9px] text-neutral-400 italic block mt-0.5">Catatan: {doc.notes}</span>
-                                                            )}
+                                                            <span className="text-neutral-700 font-semibold block">{doc.no}. {doc.description}</span>
                                                         </div>
-                                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold border uppercase shrink-0 ${
-                                                            doc.value === 'Ya' 
-                                                                ? 'bg-green-50 border-green-200 text-green-700' 
-                                                                : 'bg-neutral-50 border-neutral-200 text-neutral-600'
-                                                        }`}>
-                                                            {doc.value === 'Ya' ? 'Ada' : 'Tidak'}
-                                                        </span>
+                                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold border uppercase shrink-0 ${doc.value === 'Ya' ? 'bg-green-50 border-green-200 text-green-700' : 'bg-neutral-50 border-neutral-200 text-neutral-600'}`}>{doc.value === 'Ya' ? 'Ada' : 'Tidak'}</span>
                                                     </div>
                                                 ))}
                                             </div>
@@ -976,30 +1102,10 @@ export default function Dashboard({ auth, forms }) {
                                 </div>
                             )}
 
-                            {/* Tab 5: Evaluasi Kualitatif */}
-                            {activeDetailTab === 4 && (
+                            {activeDetailTab === 4 && (!viewDetailForm.form_type || viewDetailForm.form_type === 'A10') && (
                                 <div className="space-y-6 animate-fade-in-up">
-                                    {/* Section B: Ringkasan Evaluasi Penerimaan */}
                                     <div className="bg-gradient-to-br from-blue-50/50 to-neutral-50 p-5 rounded-2xl border border-blue-100 shadow-sm space-y-4">
-                                        <h4 className="text-xs font-extrabold uppercase tracking-wider text-blue-700">Ringkasan Keputusan Penerimaan/Keberlanjutan Klien</h4>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
-                                            <div className="bg-white p-3 rounded-xl border border-neutral-200/60 shadow-xs">
-                                                <span className="text-[9px] text-neutral-400 block font-bold uppercase">Evaluasi Integritas</span>
-                                                <span className="text-neutral-800 font-bold block mt-1">{viewDetailForm.section_data?.section_b?.integritas || '-'}</span>
-                                            </div>
-                                            <div className="bg-white p-3 rounded-xl border border-neutral-200/60 shadow-xs">
-                                                <span className="text-[9px] text-neutral-400 block font-bold uppercase">Evaluasi Independensi</span>
-                                                <span className="text-neutral-800 font-bold block mt-1">{viewDetailForm.section_data?.section_b?.independensi || '-'}</span>
-                                            </div>
-                                            <div className="bg-white p-3 rounded-xl border border-neutral-200/60 shadow-xs">
-                                                <span className="text-[9px] text-neutral-400 block font-bold uppercase">Dapat Diaudit (Auditable)</span>
-                                                <span className="text-neutral-800 font-bold block mt-1">{viewDetailForm.section_data?.section_b?.auditable || '-'}</span>
-                                            </div>
-                                            <div className="bg-white p-3 rounded-xl border border-neutral-200/60 shadow-xs">
-                                                <span className="text-[9px] text-neutral-400 block font-bold uppercase">Risiko Penugasan</span>
-                                                <span className="text-neutral-800 font-bold block mt-1">{viewDetailForm.section_data?.section_b?.risiko || '-'}</span>
-                                            </div>
-                                        </div>
+                                        <h4 className="text-xs font-extrabold uppercase tracking-wider text-blue-700">Ringkasan Keputusan</h4>
                                         <div className="grid grid-cols-2 gap-4 border-t border-blue-100 pt-3">
                                             <div className="bg-red-50 border border-red-200 p-3 rounded-xl text-center">
                                                 <span className="text-[9px] text-red-500 font-bold block uppercase tracking-wider">Level Risiko Penugasan</span>
@@ -1009,103 +1115,6 @@ export default function Dashboard({ auth, forms }) {
                                                 <span className="text-[9px] text-green-500 font-bold block uppercase tracking-wider">Keputusan Akhir</span>
                                                 <span className="text-green-700 font-extrabold text-sm block mt-0.5">{viewDetailForm.section_data?.section_b?.kesimpulan || '-'}</span>
                                             </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Section 6: Entitas Bisnis Kecil */}
-                                    {viewDetailForm.section_data?.section_6 && (
-                                        <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm space-y-4">
-                                            <div className="flex justify-between items-center border-b border-neutral-100 pb-2">
-                                                <h4 className="text-xs font-extrabold uppercase tracking-wider text-neutral-400">Kriteria Entitas Bisnis Kecil</h4>
-                                                <span className="text-[10px] text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full font-bold">14 Parameter</span>
-                                            </div>
-                                            <div className="bg-neutral-50 p-3.5 rounded-xl border border-neutral-200">
-                                                <span className="text-[9px] text-neutral-400 font-bold block uppercase tracking-wider">Kesimpulan Kriteria Bisnis Kecil</span>
-                                                <p className="text-neutral-800 font-bold italic text-xs mt-1 leading-relaxed">"{viewDetailForm.section_data.section_6.conclusion || '-'}"</p>
-                                            </div>
-                                            <div className="divide-y divide-neutral-100 text-xs max-h-60 overflow-y-auto pr-1">
-                                                {viewDetailForm.section_data.section_6.questions?.map((q) => (
-                                                    <div key={q.no} className="py-2.5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                                                        <div className="flex-1 min-w-0 pr-2">
-                                                            <p className="text-neutral-700 font-semibold leading-relaxed">{q.no}. {q.description}</p>
-                                                            {q.notes && (
-                                                                <p className="text-neutral-500 italic text-[10px] mt-1 bg-neutral-50 p-1.5 rounded border border-neutral-100">Catatan: {q.notes}</p>
-                                                            )}
-                                                        </div>
-                                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold border shrink-0 uppercase tracking-wider ${
-                                                            q.value === 'Y' 
-                                                                ? 'bg-blue-50 border-blue-200 text-blue-700 font-bold' 
-                                                                : 'bg-neutral-50 border-neutral-200 text-neutral-600'
-                                                        }`}>
-                                                            {q.value === 'Y' ? 'Ya' : q.value === 'T' ? 'Tidak' : q.value}
-                                                        </span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Integrity Assessment card */}
-                                    <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm space-y-4">
-                                        <div className="flex justify-between items-center border-b border-neutral-100 pb-2">
-                                            <h4 className="text-xs font-extrabold uppercase tracking-wider text-neutral-400">III. Evaluasi Integritas Manajemen</h4>
-                                            <span className="text-[10px] text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-0.5 rounded-full font-bold">Integritas</span>
-                                        </div>
-                                        <div className="bg-neutral-50 p-3.5 rounded-xl border border-neutral-200">
-                                            <span className="text-[9px] text-neutral-400 font-bold block uppercase tracking-wider">Kesimpulan Penilaian Integritas</span>
-                                            <p className="text-neutral-800 font-bold italic text-xs mt-1 leading-relaxed">"{viewDetailForm.section_data?.section_3?.conclusion || '-'}"</p>
-                                        </div>
-                                        <div className="divide-y divide-neutral-100 text-xs">
-                                            {viewDetailForm.section_data?.section_3?.questions?.map((q) => (
-                                                <div key={q.no} className="py-3.5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                                                    <div className="flex-1 min-w-0 pr-2">
-                                                        <p className="text-neutral-700 font-semibold leading-relaxed">{q.no}. {q.description}</p>
-                                                        {q.notes && (
-                                                            <p className="text-neutral-500 italic text-[10px] mt-1 bg-neutral-50 p-1.5 rounded border border-neutral-100">Catatan: {q.notes}</p>
-                                                        )}
-                                                    </div>
-                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold border shrink-0 uppercase tracking-wider ${
-                                                        q.value === 'Ya' 
-                                                            ? 'bg-green-50 border-green-200 text-green-700 font-bold' 
-                                                            : q.value === 'Tidak'
-                                                                ? 'bg-neutral-50 border-neutral-200 text-neutral-600'
-                                                                : 'bg-orange-50 border-orange-200 text-orange-600'
-                                                    }`}>
-                                                        {q.value}
-                                                    </span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    {/* Independence Assessment card */}
-                                    <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm space-y-4">
-                                        <div className="flex justify-between items-center border-b border-neutral-100 pb-2">
-                                            <h4 className="text-xs font-extrabold uppercase tracking-wider text-neutral-400">IV. Evaluasi Independensi KAP</h4>
-                                            <span className="text-[10px] text-red-700 bg-red-50 border border-red-200 px-2.5 py-0.5 rounded-full font-bold">Independensi</span>
-                                        </div>
-                                        <div className="bg-neutral-50 p-3.5 rounded-xl border border-neutral-200">
-                                            <span className="text-[9px] text-neutral-400 font-bold block uppercase tracking-wider">Kesimpulan Penilaian Independensi</span>
-                                            <p className="text-neutral-800 font-bold italic text-xs mt-1 leading-relaxed">"{viewDetailForm.section_data?.section_4?.conclusion || '-'}"</p>
-                                        </div>
-                                        <div className="divide-y divide-neutral-100 text-xs">
-                                            {viewDetailForm.section_data?.section_4?.questions?.map((q) => (
-                                                <div key={q.no} className="py-3.5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                                                    <div className="flex-1 min-w-0 pr-2">
-                                                        <p className="text-neutral-700 font-semibold leading-relaxed">{q.no}. {q.description}</p>
-                                                        {q.notes && (
-                                                            <p className="text-neutral-500 italic text-[10px] mt-1 bg-neutral-50 p-1.5 rounded border border-neutral-100">Catatan: {q.notes}</p>
-                                                        )}
-                                                    </div>
-                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold border shrink-0 uppercase tracking-wider ${
-                                                        q.value === 'Ya' 
-                                                            ? 'bg-red-50 border-red-200 text-red-700 font-bold' 
-                                                            : 'bg-neutral-50 border-neutral-200 text-neutral-600'
-                                                    }`}>
-                                                        {q.value}
-                                                    </span>
-                                                </div>
-                                            ))}
                                         </div>
                                     </div>
                                 </div>
@@ -1122,6 +1131,304 @@ export default function Dashboard({ auth, forms }) {
                                 Tutup Pratinjau
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Admin Add Client Modal */}
+            {showAddClientModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-900/40 backdrop-blur-sm p-4">
+                    <div className="glass-panel w-full max-w-md p-6 rounded-2xl animate-fade-in-up border border-neutral-200 bg-white">
+                        <h3 className="text-lg font-bold text-[#1d1d1f] mb-2">Tambah Perikatan Klien Baru</h3>
+                        <form onSubmit={handleAddClientSubmit} className="space-y-4">
+                            <div>
+                                <label className="block text-xs text-neutral-500 font-semibold mb-1">NAMA KLIEN</label>
+                                <input
+                                    type="text"
+                                    value={newClientName}
+                                    onChange={(e) => setNewClientName(e.target.value)}
+                                    placeholder="Contoh: PT EASTPARC HOTEL TBK"
+                                    className="w-full custom-input p-3 text-sm"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-neutral-500 font-semibold mb-1">TAHUN BUKU</label>
+                                <input
+                                    type="text"
+                                    value={newBookYear}
+                                    onChange={(e) => setNewBookYear(e.target.value)}
+                                    placeholder="Contoh: 31 Desember 2024"
+                                    className="w-full custom-input p-3 text-sm"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-neutral-500 font-semibold mb-1">JADWAL / SKEDUL PENILAIAN</label>
+                                <input
+                                    type="text"
+                                    value={newSchedule}
+                                    onChange={(e) => setNewSchedule(e.target.value)}
+                                    placeholder="Contoh: Pre-Engagement"
+                                    className="w-full custom-input p-3 text-sm"
+                                    required
+                                />
+                            </div>
+                            <div className="flex justify-end gap-3 pt-4 border-t border-neutral-100">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAddClientModal(false)}
+                                    className="px-4 py-2 border border-neutral-200 text-neutral-600 rounded-lg hover:bg-neutral-50 text-xs transition"
+                                >
+                                    Batal
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="btn-glow-indigo text-xs font-semibold px-4 py-2 rounded-lg"
+                                >
+                                    Simpan Klien
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Admin Edit Client Modal */}
+            {showEditClientModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-900/40 backdrop-blur-sm p-4">
+                    <div className="glass-panel w-full max-w-md p-6 rounded-2xl animate-fade-in-up border border-neutral-200 bg-white">
+                        <h3 className="text-lg font-bold text-[#1d1d1f] mb-2">Edit Perikatan Klien</h3>
+                        <form onSubmit={handleEditClientSubmit} className="space-y-4">
+                            <div>
+                                <label className="block text-xs text-neutral-500 font-semibold mb-1">NAMA KLIEN</label>
+                                <input
+                                    type="text"
+                                    value={newClientName}
+                                    onChange={(e) => setNewClientName(e.target.value)}
+                                    className="w-full custom-input p-3 text-sm"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-neutral-500 font-semibold mb-1">TAHUN BUKU</label>
+                                <input
+                                    type="text"
+                                    value={newBookYear}
+                                    onChange={(e) => setNewBookYear(e.target.value)}
+                                    className="w-full custom-input p-3 text-sm"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-neutral-500 font-semibold mb-1">JADWAL / SKEDUL PENILAIAN</label>
+                                <input
+                                    type="text"
+                                    value={newSchedule}
+                                    onChange={(e) => setNewSchedule(e.target.value)}
+                                    className="w-full custom-input p-3 text-sm"
+                                    required
+                                />
+                            </div>
+                            <div className="flex justify-end gap-3 pt-4 border-t border-neutral-100">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowEditClientModal(false);
+                                        setEditClientData(null);
+                                    }}
+                                    className="px-4 py-2 border border-neutral-200 text-neutral-600 rounded-lg hover:bg-neutral-50 text-xs transition"
+                                >
+                                    Batal
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="btn-glow-indigo text-xs font-semibold px-4 py-2 rounded-lg"
+                                >
+                                    Perbarui
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Partner Manage Team Modal */}
+            {showTeamModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-900/40 backdrop-blur-sm p-4">
+                    <div className="glass-panel w-full max-w-2xl p-6 rounded-2xl animate-fade-in-up border border-neutral-200 bg-white">
+                        <h3 className="text-lg font-bold text-[#1d1d1f] mb-2">Susun Tim Perikatan: {teamClient.name}</h3>
+                        <p className="text-neutral-500 text-xs mb-4">Tunjuk anggota tim untuk masing-masing peran di perikatan ini. Anda dapat menambah atau mengurangi baris secara dinamis.</p>
+
+                        <form onSubmit={handleTeamSubmit} className="space-y-4">
+                            <div className="max-h-[350px] overflow-y-auto pr-1 space-y-3">
+                                <div className="flex gap-2 text-[10px] text-neutral-400 font-bold uppercase px-1">
+                                    <div className="flex-1">Nama Anggota</div>
+                                    <div className="w-48">Role Tim Perikatan</div>
+                                    <div className="w-8 shrink-0"></div>
+                                </div>
+                                {teamRows.map((row, index) => (
+                                    <div key={index} className="flex gap-2 items-center">
+                                        <div className="flex-1">
+                                            <select
+                                                value={row.user_id}
+                                                onChange={(e) => handleUpdateRow(index, 'user_id', e.target.value)}
+                                                className="w-full custom-input p-2.5 text-xs"
+                                                required
+                                            >
+                                                <option value="">Pilih Anggota...</option>
+                                                {allUsers.map(u => (
+                                                    <option key={u.id} value={u.id}>{u.name} ({u.role.toUpperCase()} - {u.inisial})</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div className="w-48">
+                                            <select
+                                                value={row.role}
+                                                onChange={(e) => handleUpdateRow(index, 'role', e.target.value)}
+                                                className="w-full custom-input p-2.5 text-xs"
+                                                required
+                                            >
+                                                <option value="anggota">Anggota (Staff)</option>
+                                                <option value="ketua_tim">Ketua Tim (Staff)</option>
+                                                <option value="supervisor">Supervisor (Manager)</option>
+                                                <option value="partner">Partner (Partner)</option>
+                                            </select>
+                                        </div>
+                                        <div className="shrink-0 w-8 flex items-center justify-center">
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRemoveRow(index)}
+                                                className="p-2 text-red-500 hover:text-red-700 transition"
+                                                title="Hapus Baris"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="pt-2">
+                                <button
+                                    type="button"
+                                    onClick={handleAddRow}
+                                    className="inline-flex items-center gap-1.5 px-3.5 py-2 border border-dashed border-neutral-300 hover:border-neutral-400 text-[#0071e3] hover:bg-neutral-50 rounded-xl text-xs font-bold transition w-full justify-center"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                                    </svg>
+                                    Tambah Baris Anggota
+                                </button>
+                            </div>
+
+                            <div className="flex justify-end gap-3 pt-4 border-t border-neutral-100">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowTeamModal(false);
+                                        setTeamClient(null);
+                                    }}
+                                    className="px-4 py-2 border border-neutral-200 text-neutral-600 rounded-lg hover:bg-neutral-50 text-xs transition"
+                                >
+                                    Batal
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="btn-glow-indigo text-xs font-semibold px-4 py-2 rounded-lg"
+                                >
+                                    Simpan Susunan Tim
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Admin Add User Modal */}
+            {showAddUserModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-900/40 backdrop-blur-sm p-4">
+                    <div className="glass-panel w-full max-w-md p-6 rounded-2xl animate-fade-in-up border border-neutral-200 bg-white">
+                        <h3 className="text-lg font-bold text-[#1d1d1f] mb-2">Daftarkan Pengguna Baru</h3>
+                        <p className="text-neutral-500 text-xs mb-4">Buat akun untuk staf atau manajemen baru agar mereka dapat mengakses perikatan.</p>
+
+                        <form onSubmit={handleAddUserSubmit} className="space-y-4">
+                            <div>
+                                <label className="block text-xs text-neutral-500 font-semibold mb-1">NAMA LENGKAP</label>
+                                <input
+                                    type="text"
+                                    value={usrName}
+                                    onChange={(e) => setUsrName(e.target.value)}
+                                    placeholder="Contoh: Andi Wijaya"
+                                    className="w-full custom-input p-3 text-xs"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-neutral-500 font-semibold mb-1">INISIAL PENGGUNA</label>
+                                <input
+                                    type="text"
+                                    value={usrInisial}
+                                    onChange={(e) => setUsrInisial(e.target.value)}
+                                    placeholder="Contoh: AND"
+                                    maxLength={3}
+                                    className="w-full custom-input p-3 text-xs uppercase"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-neutral-500 font-semibold mb-1">ALAMAT EMAIL</label>
+                                <input
+                                    type="email"
+                                    value={usrEmail}
+                                    onChange={(e) => setUsrEmail(e.target.value)}
+                                    placeholder="Contoh: andi@example.com"
+                                    className="w-full custom-input p-3 text-xs"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-neutral-500 font-semibold mb-1">KATA SANDI</label>
+                                <input
+                                    type="password"
+                                    value={usrPassword}
+                                    onChange={(e) => setUsrPassword(e.target.value)}
+                                    placeholder="Minimal 8 karakter..."
+                                    className="w-full custom-input p-3 text-xs"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-neutral-500 font-semibold mb-1">ROLE SISTEM</label>
+                                <select
+                                    value={usrRole}
+                                    onChange={(e) => setUsrRole(e.target.value)}
+                                    className="w-full custom-input p-2.5 text-xs"
+                                >
+                                    <option value="staff">Staff (Andi/Saipul)</option>
+                                    <option value="manager">Manager (Joko)</option>
+                                    <option value="partner">Partner (Sandra)</option>
+                                    <option value="admin">Admin (Linda)</option>
+                                </select>
+                            </div>
+                            <div className="flex justify-end gap-3 pt-4 border-t border-neutral-100">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAddUserModal(false)}
+                                    className="px-4 py-2 border border-neutral-200 text-neutral-600 rounded-lg hover:bg-neutral-50 text-xs transition"
+                                >
+                                    Batal
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="btn-glow-indigo text-xs font-semibold px-4 py-2 rounded-lg"
+                                >
+                                    Daftarkan
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}

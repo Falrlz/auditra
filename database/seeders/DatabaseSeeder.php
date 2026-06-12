@@ -16,34 +16,84 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // 1. Seed users
-        $anggota = User::updateOrCreate(
-            ['email' => 'anggota@example.com'],
+        $admin = User::updateOrCreate(
+            ['email' => 'linda@example.com'],
             [
-                'name' => 'Anggota Staff',
+                'name' => 'Linda Admin',
                 'password' => Hash::make('password'),
-                'role' => 'anggota',
+                'role' => 'admin',
+                'inisial' => 'LIN',
             ]
         );
 
-        $ketua = User::updateOrCreate(
-            ['email' => 'ketuatim@example.com'],
+        $partner = User::updateOrCreate(
+            ['email' => 'sandra@example.com'],
             [
-                'name' => 'Ketua Tim Reviewer',
+                'name' => 'Sandra Partner',
                 'password' => Hash::make('password'),
-                'role' => 'ketua_tim',
+                'role' => 'partner',
+                'inisial' => 'SAN',
             ]
         );
 
-        $supervisor = User::updateOrCreate(
-            ['email' => 'supervisor@example.com'],
+        $manager = User::updateOrCreate(
+            ['email' => 'joko@example.com'],
             [
-                'name' => 'Supervisor Approver',
+                'name' => 'Joko Manager',
                 'password' => Hash::make('password'),
-                'role' => 'supervisor',
+                'role' => 'manager',
+                'inisial' => 'JOK',
             ]
         );
 
-        // 2. Parse a10.ods
+        $andi = User::updateOrCreate(
+            ['email' => 'andi@example.com'],
+            [
+                'name' => 'Andi Staff',
+                'password' => Hash::make('password'),
+                'role' => 'staff',
+                'inisial' => 'AND',
+            ]
+        );
+
+        $saipul = User::updateOrCreate(
+            ['email' => 'saipul@example.com'],
+            [
+                'name' => 'Saipul Staff',
+                'password' => Hash::make('password'),
+                'role' => 'staff',
+                'inisial' => 'SAI',
+            ]
+        );
+
+        // 2. Seed Client
+        $client = \App\Models\Client::updateOrCreate(
+            ['name' => 'PT EASTPARC HOTEL TBK'],
+            [
+                'book_year' => '31 Desember 2024',
+                'schedule' => 'Pre-Engagement (Analisi Penerimaan Dan Keberlanjutan Hubungan Dengan Klien)',
+            ]
+        );
+
+        // 3. Seed Tim Perikatan
+        \App\Models\EngagementTeam::updateOrCreate(
+            ['client_id' => $client->id, 'user_id' => $andi->id],
+            ['role' => 'anggota']
+        );
+        \App\Models\EngagementTeam::updateOrCreate(
+            ['client_id' => $client->id, 'user_id' => $saipul->id],
+            ['role' => 'ketua_tim']
+        );
+        \App\Models\EngagementTeam::updateOrCreate(
+            ['client_id' => $client->id, 'user_id' => $manager->id],
+            ['role' => 'supervisor']
+        );
+        \App\Models\EngagementTeam::updateOrCreate(
+            ['client_id' => $client->id, 'user_id' => $partner->id],
+            ['role' => 'partner']
+        );
+
+        // 4. Parse a10.ods
         $odsPath = base_path('a10.ods');
         if (!file_exists($odsPath)) {
             $this->command->error("a10.ods not found at " . $odsPath);
@@ -54,26 +104,20 @@ class DatabaseSeeder extends Seeder
         try {
             $sheets = $parser->parse($odsPath);
             $sheet0 = isset($sheets['A10']) ? $sheets['A10'] : array_values($sheets)[0];
-            
-            // Extract metadata
-            $clientName = 'PT EASTPARC HOTEL TBK';
-            $bookYear = '31 Desember 2024';
-            $schedule = 'Pre-Engagement (Analisi Penerimaan Dan Keberlanjutan Hubungan Dengan Klien)';
 
             // We will parse the cells of Sheet 0 to construct a rich structured JSON
             $sectionData = $this->buildStructuredData($sheet0);
 
-            // 3. Create AuditForm Draft
+            // 5. Create AuditForm Draft
             AuditForm::create([
-                'client_name' => $clientName,
-                'book_year' => $bookYear,
-                'schedule' => $schedule,
+                'client_id' => $client->id,
+                'form_type' => 'A10',
                 'status' => 'draft',
                 'section_data' => $sectionData,
-                'preparer_id' => $anggota->id,
+                'preparer_id' => $andi->id,
             ]);
 
-            $this->command->info("Database seeded successfully with users and a10.ods draft form.");
+            $this->command->info("Database seeded successfully with users, client, engagement team, and a10.ods draft form.");
         } catch (\Exception $e) {
             $this->command->error("Failed to parse and seed ODS data: " . $e->getMessage());
         }

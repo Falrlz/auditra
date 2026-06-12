@@ -24,30 +24,31 @@ Have you ever struggled with tracking audit documents, handling manual review fl
 
 ## What It Does
 
-- **Audit Form Wizard** → Multi-step wizard to create and edit detailed A10 audit forms  
-- **ODS File Parser** → Instantly pre-fill complex audit forms from an uploaded `a10.ods` file  
-- **Role-Based Workflows** → Dynamic features and views tailored specifically for Anggota, Ketua Tim, and Supervisor roles  
-- **Review & Feedback Loop** → Rejection capability with detailed reasons, allowing Anggota to correct and resubmit drafts  
-- **Traceable Log** → Transparent tracking of preparer, reviewer, and final approver details for each audit form  
+- **A10 Pre-Engagement Wizard** → Multi-step interactive wizard to create, edit, and evaluate client acceptance and continuance forms (SA 210, Going Concern, Integrity, and Independence).
+- **D10 Materiality & Significant Accounts** → Interactive materiality calculator (Overall Materiality, Performance Materiality, Tolerable Error) and mapping of Significant Accounts with audit assertions.
+- **ODS File Parser** → Instantly pre-fill A10 audit forms from an uploaded `a10.ods` file without external heavyweight library dependencies.
+- **Multi-Tier Role-Based Workflow** → Comprehensive dashboard mapping approval flows through Anggota, Ketua Tim, Supervisor, and Partner roles.
+- **Review & Feedback Loop** → Rejection capability with detailed reason feedback, allowing Anggota to correct and resubmit drafts.
+- **Traceable Log** → Transparent log tracking of preparer, reviewer, and final approver details for each audit form.
 
 ## How It Works
 
 ### 1. Form Generation & ODS Upload
-- Anggota uploads an `a10.ods` spreadsheet or manually starts the wizard.
-- The `OdsParser` service extracts XML content from the ODS package and parses cell values.
-- Form fields are dynamically pre-filled with structured data mapped from the spreadsheet rows.
+- **A10**: Anggota uploads an `a10.ods` spreadsheet or manually starts the wizard to populate fields mapped directly from the workbook cells.
+- **D10**: Anggota starts the D10 planning materiality wizard for the selected client and fills out calculations.
 
 ### 2. Form Editing & Submission
-- Anggota fills out and saves the multi-step form (SA 210, client background, going concern, integrity, independence, and conclusions) as a draft.
-- The completed form is submitted, updating its status to `pending_approval`.
+- Anggota fills out and saves the multi-step form as a draft.
+- Once finished, the Anggota submits the form for review, which locks editing and sets the status to `pending_ketua_tim`.
 
 ### 3. Verification & Decision by Ketua Tim
-- Ketua Tim checks the submitted form in their dashboard queue.
-- Ketua Tim can either approve (escalating the status to `approved_by_leader`) or reject (returning the status to `rejected` with custom feedback notes).
+- Ketua Tim reviews the form in their dashboard queue and can either approve (escalating to `pending_supervisor`) or reject (returning status to `rejected` with feedback notes).
 
-### 4. Final Sign-off by Supervisor
-- Once approved by the Ketua Tim, the form enters the Supervisor's approval queue.
-- Supervisor signs off, changing the status to `approved` and completing the approval cycle.
+### 4. Verification by Supervisor
+- Supervisor checks the escalated form and can either approve (escalating to `pending_partner`) or reject (returning to `rejected`).
+
+### 5. Final Sign-off by Partner
+- Partner performs final validation and signs off on the form, updating the status to `final_approved`.
 
 ## Key Features
 
@@ -59,6 +60,12 @@ Have you ever struggled with tracking audit documents, handling manual review fl
 - Multi-step interactive wizard using Inertia.js and Headless UI.
 - Real-time client-side validations and field mapping for complex section data.
 - Responsive layout with desktop table views and mobile card lists.
+- **Enhanced Form A10 UI/UX**:
+  - Clean initial state without hardcoded default dates (`'4/25/2024'`) or initials (`'SP'`).
+  - Standardized short input placeholders (e.g., `"DD/MM/YYYY"` for dates).
+  - Consistent boxed designs for inputs (such as matching border and background styles for initials and date inputs).
+  - Smooth interactive transitions with focus rings (`focus:ring-2 focus:ring-blue-500/20`) and active scale-down feedback for buttons (`active:scale-[0.99]` and `active:scale-[0.98]`).
+  - Standard compliance opening paragraphs for Section III (Integritas Manajemen) and Section IV (Independensi Kantor).
 
 ### Structured JSON Storage
 - Audit forms data structured into detailed JSON objects (`section_data`) and stored inside a single Eloquent field utilizing database casts.
@@ -163,36 +170,32 @@ Stores user accounts and their respective role inside the system.
 * **`name`** (`string`): Full name of the user.
 * **`email`** (`string`, Unique): Email address used for authentication.
 * **`password`** (`string`): Hashed password.
-* **`role`** (`string`, Default: `'anggota'`): The system role defining permission levels. Available values:
-  * `anggota`: Staff members who prepare the audit forms and parse ODS documents.
-  * `ketua_tim`: Team leaders responsible for the initial review step (can approve or reject).
-  * `supervisor`: Supervisors who provide the final approval.
+* **`role`** (`string`, Default: `'staff'`): The global system role defining administrative permission levels. Available values:
+  * `admin`: Has global management capabilities (create users, create clients, delete records).
+  * `partner`: Can assign engagement teams (anggota, ketua_tim, supervisor, partner) to client perikatan.
+  * `manager`: General manager role (typically assigned as a supervisor).
+  * `staff`: General staff role (typically assigned as anggota or ketua_tim).
 * **`created_at` / `updated_at`** (`timestamp`): Auto-managed Laravel timestamps.
 
 #### 2. `audit_forms` Table
 Stores the audit forms, their workflow approval statuses, and parsed questionnaire data.
 * **`id`** (`unsigned big integer`, Primary Key): Unique identifier for the audit form.
-* **`client_name`** (`string`): The name of the client company (e.g. `PT EASTPARC HOTEL TBK`).
-* **`book_year`** (`string`): Financial year ending date under audit (e.g. `31 Desember 2024`).
-* **`schedule`** (`string`): The engagement stage name.
+* **`client_id`** (`unsigned big integer`, Foreign Key -> `clients.id`): References the client company associated with the audit.
+* **`form_type`** (`string`): The type of the form (either `A10` or `D10`).
 * **`status`** (`string`, Default: `'draft'`): Current workflow approval state:
-  * `draft`: Form is being filled or parsed by `anggota` and not yet submitted.
-  * `pending_approval`: Submitted by `anggota` and waiting for review by `ketua_tim`.
-  * `approved_by_leader`: Reviewed and approved by `ketua_tim`, waiting for final sign-off by `supervisor`.
-  * `approved`: Fully approved by `supervisor` (final state).
-  * `rejected`: Rejected by `ketua_tim` (sent back to `anggota` with a reason).
-* **`reject_reason`** (`text`, Nullable): Text containing explanation or feedback from `ketua_tim` if the form is rejected.
+  * `draft`: Form is being draft-saved by `anggota` and not yet submitted.
+  * `pending_ketua_tim`: Submitted by `anggota` and waiting for review by `ketua_tim`.
+  * `pending_supervisor`: Approved by `ketua_tim`, waiting for review by `supervisor`.
+  * `pending_partner`: Approved by `supervisor`, waiting for final sign-off by `partner`.
+  * `final_approved`: Fully approved by `partner` (final active state).
+  * `rejected`: Rejected by any reviewer (sent back to `anggota` with a feedback reason).
+* **`reject_reason`** (`text`, Nullable): Text containing explanation or feedback from reviewer if the form is rejected.
 * **`section_data`** (`longtext` / `json`, Nullable): Stores the entire detailed audit questionnaire answers. It uses Laravel's array casting to cast JSON string directly to/from PHP array. It contains structured fields mapped from `a10.ods`:
-  * `section_1` (Analisis Penerimaan & Keberlanjutan Klien)
-  * `section_2` (Persyaratan Umum Perikatan)
-  * `section_3` (Kompetensi Teknis & Kecukupan Waktu)
-  * `section_4` (Evaluasi Independensi)
-  * `section_5` (Komunikasi dengan Auditor Terdahulu)
-  * `section_6` (Isu Pelaporan Khusus)
-  * `section_b` (Kesimpulan & Rekomendasi)
+  * **For A10**: `section_1` (SA 210), `section_2_a` to `section_2_h` (Data Klien), `section_3` (Integritas), `section_4` (Independensi), `section_5` (Prosedur Lain), `section_6` (Bisnis Kecil), and `section_b` (Kesimpulan).
+  * **For D10**: `materiality` parameters (Benchmark, percentage, etc.), `qualitative_questions`, and `accounts` list (Significant accounts and assertions).
 * **`preparer_id`** (`unsigned big integer`, Foreign Key -> `users.id`): References the user who prepared/created the form. Cascade on delete.
-* **`reviewer_id`** (`unsigned big integer`, Foreign Key -> `users.id`, Nullable): References the `ketua_tim` user who reviewed the form. Null on delete.
-* **`approver_id`** (`unsigned big integer`, Foreign Key -> `users.id`, Nullable): References the `supervisor` user who gave the final approval. Null on delete.
+* **`reviewer_id`** (`unsigned big integer`, Foreign Key -> `users.id`, Nullable): References the user who reviewed the form. Null on delete.
+* **`approver_id`** (`unsigned big integer`, Foreign Key -> `users.id`, Nullable): References the user who gave final sign-off. Null on delete.
 * **`created_at` / `updated_at`** (`timestamp`): Auto-managed Laravel timestamps.
 
 ## Technology Stack
@@ -237,10 +240,12 @@ composer run dev
 ```
 
 ### Pre-seeded User Accounts
-For testing the role-based dashboard views, you can log in using the following accounts:
-- **Anggota Role**: `anggota@example.com` (Password: `password`)
-- **Ketua Tim Role**: `ketuatim@example.com` (Password: `password`)
-- **Supervisor Role**: `supervisor@example.com` (Password: `password`)
+For testing the role-based dashboard views and multi-tier approval flows, you can log in using the following accounts:
+- **Admin**: `linda@example.com` (Password: `password`, Initial: `LIN`) - Global administrator (can manage all users and clients).
+- **Partner**: `sandra@example.com` (Password: `password`, Initial: `SAN`) - Partner role (can configure client engagement teams).
+- **Supervisor / Manager**: `joko@example.com` (Password: `password`, Initial: `JOK`) - Supervisor role in the client engagement team (handles supervisor-level approvals).
+- **Ketua Tim**: `saipul@example.com` (Password: `password`, Initial: `SAI`) - Ketua Tim role in the client engagement team (handles team-leader-level approvals).
+- **Anggota / Staff**: `andi@example.com` (Password: `password`, Initial: `AND`) - Anggota role in the client engagement team (creates, edits, and submits A10/D10 forms).
 
 ## Environment Configuration
 

@@ -7,9 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 class AuditForm extends Model
 {
     protected $fillable = [
-        'client_name',
-        'book_year',
-        'schedule',
+        'client_id',
+        'form_type',
         'status',
         'reject_reason',
         'section_data',
@@ -23,6 +22,11 @@ class AuditForm extends Model
         return [
             'section_data' => 'array',
         ];
+    }
+
+    public function client()
+    {
+        return $this->belongsTo(Client::class);
     }
 
     public function preparer()

@@ -13,10 +13,8 @@ return new class extends Migration
     {
         Schema::create('audit_forms', function (Blueprint $table) {
             $table->id();
-            $table->string('client_name');
-            $table->string('book_year');
-            $table->string('schedule');
-            $table->string('status')->default('draft'); // 'draft', 'pending_approval', 'approved_by_leader', 'approved', 'rejected'
+            $table->foreignId('client_id')->constrained('clients')->onDelete('cascade');
+            $table->string('status')->default('draft'); // 'draft', 'pending_ketua_tim', 'pending_supervisor', 'pending_partner', 'final_approved', 'rejected'
             $table->text('reject_reason')->nullable();
             $table->longText('section_data')->nullable(); // JSON containing all questionnaire sections
             $table->foreignId('preparer_id')->constrained('users')->onDelete('cascade');

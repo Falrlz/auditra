@@ -23,6 +23,7 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'inisial',
     ];
 
     /**
@@ -48,18 +49,41 @@ class User extends Authenticatable
         ];
     }
 
-    public function isAnggota(): bool
+    public function isAdmin(): bool
     {
-        return $this->role === 'anggota';
+        return $this->role === 'admin';
     }
 
-    public function isKetuaTim(): bool
+    public function isPartner(): bool
     {
-        return $this->role === 'ketua_tim';
+        return $this->role === 'partner';
     }
 
-    public function isSupervisor(): bool
+    public function isManager(): bool
     {
-        return $this->role === 'supervisor';
+        return $this->role === 'manager';
+    }
+
+    public function isStaff(): bool
+    {
+        return $this->role === 'staff';
+    }
+
+    public function timPerikatans()
+    {
+        return $this->hasMany(EngagementTeam::class);
+    }
+
+    public function clients()
+    {
+        return $this->belongsToMany(Client::class, 'tim_perikatans')
+                    ->withPivot('role')
+                    ->withTimestamps();
+    }
+
+    public function roleInClient($clientId)
+    {
+        $teamMember = $this->timPerikatans()->where('client_id', $clientId)->first();
+        return $teamMember ? $teamMember->role : null;
     }
 }

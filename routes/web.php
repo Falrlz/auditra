@@ -24,26 +24,32 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // Common Auth routes
+    // Admin routes
+    Route::middleware('role:admin')->group(function () {
+        Route::post('/users', [\App\Http\Controllers\UserController::class, 'store'])->name('users.store');
+        Route::delete('/users/{user}', [\App\Http\Controllers\UserController::class, 'destroy'])->name('users.destroy');
+        Route::post('/clients', [AuditFormController::class, 'storeClient'])->name('clients.store');
+        Route::post('/clients/{client}', [AuditFormController::class, 'updateClient'])->name('clients.update');
+        Route::delete('/clients/{client}', [AuditFormController::class, 'destroyClient'])->name('clients.destroy');
+    });
+
+    // Partner routes
+    Route::middleware('role:partner')->group(function () {
+        Route::post('/clients/{client}/team', [AuditFormController::class, 'updateTeam'])->name('clients.team.update');
+    });
+
+    // Forms and detail routes
+    Route::get('/a10/create', [AuditFormController::class, 'createA10'])->name('a10.create');
+    Route::get('/a10/{auditForm}/edit', [AuditFormController::class, 'editA10'])->name('a10.edit');
+    Route::get('/d10/create', [AuditFormController::class, 'createD10'])->name('d10.create');
+    Route::get('/d10/{auditForm}/edit', [AuditFormController::class, 'editD10'])->name('d10.edit');
+
     Route::get('/audit-forms/{auditForm}', [AuditFormController::class, 'show'])->name('audit-forms.show');
-
-    // Anggota routes
-    Route::middleware('role:anggota')->group(function () {
-        Route::post('/audit-forms', [AuditFormController::class, 'store'])->name('audit-forms.store');
-        Route::post('/audit-forms/{auditForm}', [AuditFormController::class, 'update'])->name('audit-forms.update');
-        Route::post('/audit-forms/{auditForm}/submit', [AuditFormController::class, 'submit'])->name('audit-forms.submit');
-        Route::post('/audit-forms/parse/ods', [AuditFormController::class, 'parseOds'])->name('audit-forms.parse');
-    });
-
-    // Ketua Tim routes
-    Route::middleware('role:ketua_tim')->group(function () {
-        Route::post('/audit-forms/{auditForm}/review', [AuditFormController::class, 'review'])->name('audit-forms.review');
-    });
-
-    // Supervisor Route
-    Route::middleware('role:supervisor')->group(function () {
-        Route::post('/audit-forms/{auditForm}/approve-supervisor', [AuditFormController::class, 'approveSupervisor'])->name('audit-forms.approve-supervisor');
-    });
+    Route::post('/audit-forms', [AuditFormController::class, 'store'])->name('audit-forms.store');
+    Route::post('/audit-forms/{auditForm}', [AuditFormController::class, 'update'])->name('audit-forms.update');
+    Route::post('/audit-forms/{auditForm}/submit', [AuditFormController::class, 'submit'])->name('audit-forms.submit');
+    Route::post('/audit-forms/{auditForm}/review', [AuditFormController::class, 'review'])->name('audit-forms.review');
+    Route::post('/audit-forms/parse/ods', [AuditFormController::class, 'parseOds'])->name('audit-forms.parse');
 });
 
 require __DIR__.'/auth.php';

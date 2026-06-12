@@ -4,30 +4,31 @@ import { useState } from 'react';
 
 export default function AuthenticatedLayout({ header, children }) {
     const user = usePage().props.auth.user;
-    const [showingMobileSidebar, setShowingMobileSidebar] = useState(false);
+    const [showingMobileSidebar, setShowingMobileSidebar] = useState(false);    const hasUsersQuery = typeof window !== 'undefined' && window.location.search.includes('tab=users');
 
     const menuItems = [
         {
-            name: 'Dashboard',
+            name: 'Perikatan',
             href: route('dashboard'),
-            active: route().current('dashboard'),
+            active: route().current('dashboard') && !hasUsersQuery,
             icon: (
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
                 </svg>
             ),
         },
-
-        {
-            name: 'Laporan',
-            active: route().current('laporan.*'),
-            icon: (
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
-                </svg>
-            ),
-        },
-
+        ...(user.role === 'admin' ? [
+            {
+                name: 'User & Registrasi',
+                href: route('dashboard') + '?tab=users',
+                active: route().current('dashboard') && hasUsersQuery,
+                icon: (
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.109A11.386 11.386 0 0 1 10.089 21c-2.243 0-4.34-.647-6.11-1.758a4.125 4.125 0 0 1-1.506-3.528 10.455 10.455 0 0 1 1.905-5.13m2.106-2.722a5.976 5.976 0 0 1 5.549-3.36 5.976 5.976 0 0 1 5.549 3.36M15 8.25a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                    </svg>
+                ),
+            }
+        ] : []),
         {
             name: 'Profil Saya',
             href: route('profile.edit'),
@@ -39,7 +40,6 @@ export default function AuthenticatedLayout({ header, children }) {
             ),
         },
     ];
-
     const sidebarContent = (
         <div className="flex flex-col h-full bg-white/95 backdrop-blur-xl border-r border-neutral-200/80">
             {/* Logo */}
