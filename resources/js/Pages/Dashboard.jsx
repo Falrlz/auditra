@@ -48,6 +48,15 @@ export default function Dashboard({ auth, clients, allUsers }) {
     const [usrRole, setUsrRole] = useState('staff');
     const [usrInisial, setUsrInisial] = useState('');
 
+    // User Edit Modal State
+    const [showEditUserModal, setShowEditUserModal] = useState(false);
+    const [editUserData, setEditUserData] = useState(null);
+    const [editUsrName, setEditUsrName] = useState('');
+    const [editUsrEmail, setEditUsrEmail] = useState('');
+    const [editUsrPassword, setEditUsrPassword] = useState('');
+    const [editUsrRole, setEditUsrRole] = useState('staff');
+    const [editUsrInisial, setEditUsrInisial] = useState('');
+
     // Review Modal State
     const [showReviewModal, setShowReviewModal] = useState(false);
     const [reviewForm, setReviewForm] = useState(null);
@@ -224,6 +233,38 @@ export default function Dashboard({ auth, clients, allUsers }) {
                 setUsrPassword('');
                 setUsrRole('staff');
                 setUsrInisial('');
+            }
+        });
+    };
+
+    // Edit User Action
+    const handleOpenEditUser = (userToEdit) => {
+        setEditUserData(userToEdit);
+        setEditUsrName(userToEdit.name);
+        setEditUsrEmail(userToEdit.email);
+        setEditUsrPassword('');
+        setEditUsrRole(userToEdit.role);
+        setEditUsrInisial(userToEdit.inisial || '');
+        setShowEditUserModal(true);
+    };
+
+    const handleEditUserSubmit = (e) => {
+        e.preventDefault();
+        router.post(route('users.update', editUserData.id), {
+            name: editUsrName,
+            email: editUsrEmail,
+            password: editUsrPassword,
+            role: editUsrRole,
+            inisial: editUsrInisial
+        }, {
+            onSuccess: () => {
+                setShowEditUserModal(false);
+                setEditUserData(null);
+                setEditUsrName('');
+                setEditUsrEmail('');
+                setEditUsrPassword('');
+                setEditUsrRole('staff');
+                setEditUsrInisial('');
             }
         });
     };
@@ -588,16 +629,24 @@ export default function Dashboard({ auth, clients, allUsers }) {
                                                     </span>
                                                 </td>
                                                 <td className="py-4 px-6 text-right">
-                                                    {u.id !== user.id ? (
+                                                    <div className="flex justify-end gap-1.5">
                                                         <button
-                                                            onClick={() => handleDeleteUser(u)}
-                                                            className="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition text-xs font-bold border border-red-200/40"
+                                                            onClick={() => handleOpenEditUser(u)}
+                                                            className="px-2.5 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-lg transition text-xs font-bold"
                                                         >
-                                                            Hapus
+                                                            Edit
                                                         </button>
-                                                    ) : (
-                                                        <span className="text-xs text-neutral-400 font-medium italic">Akun Anda</span>
-                                                    )}
+                                                        {u.id !== user.id ? (
+                                                            <button
+                                                                onClick={() => handleDeleteUser(u)}
+                                                                className="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition text-xs font-bold border border-red-200/40"
+                                                            >
+                                                                Hapus
+                                                            </button>
+                                                        ) : (
+                                                            <span className="text-xs text-neutral-400 font-medium italic self-center px-1">Akun Anda</span>
+                                                        )}
+                                                    </div>
                                                 </td>
                                             </tr>
                                         ))}
@@ -1371,7 +1420,7 @@ export default function Dashboard({ auth, clients, allUsers }) {
                                 <input
                                     type="text"
                                     value={usrInisial}
-                                    onChange={(e) => setUsrInisial(e.target.value)}
+                                    onChange={(e) => setUsrInisial(e.target.value.toUpperCase())}
                                     placeholder="Contoh: AND"
                                     maxLength={3}
                                     className="w-full custom-input p-3 text-xs uppercase"
@@ -1407,10 +1456,10 @@ export default function Dashboard({ auth, clients, allUsers }) {
                                     onChange={(e) => setUsrRole(e.target.value)}
                                     className="w-full custom-input p-2.5 text-xs"
                                 >
-                                    <option value="staff">Staff (Andi/Saipul)</option>
-                                    <option value="manager">Manager (Joko)</option>
-                                    <option value="partner">Partner (Sandra)</option>
-                                    <option value="admin">Admin (Linda)</option>
+                                    <option value="staff">Staff</option>
+                                    <option value="manager">Manager</option>
+                                    <option value="partner">Partner</option>
+                                    <option value="admin">Admin</option>
                                 </select>
                             </div>
                             <div className="flex justify-end gap-3 pt-4 border-t border-neutral-100">
@@ -1426,6 +1475,94 @@ export default function Dashboard({ auth, clients, allUsers }) {
                                     className="btn-glow-indigo text-xs font-semibold px-4 py-2 rounded-lg"
                                 >
                                     Daftarkan
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Admin Edit User Modal */}
+            {showEditUserModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-900/40 backdrop-blur-sm p-4">
+                    <div className="glass-panel w-full max-w-md p-6 rounded-2xl animate-fade-in-up border border-neutral-200 bg-white">
+                        <h3 className="text-lg font-bold text-[#1d1d1f] mb-2">Edit Pengguna</h3>
+                        <p className="text-neutral-500 text-xs mb-4">Ubah detail akun atau hak akses untuk {editUserData?.name}.</p>
+
+                        <form onSubmit={handleEditUserSubmit} className="space-y-4">
+                            <div>
+                                <label className="block text-xs text-neutral-500 font-semibold mb-1">NAMA LENGKAP</label>
+                                <input
+                                    type="text"
+                                    value={editUsrName}
+                                    onChange={(e) => setEditUsrName(e.target.value)}
+                                    placeholder="Contoh: Andi Wijaya"
+                                    className="w-full custom-input p-3 text-xs"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-neutral-500 font-semibold mb-1">INISIAL PENGGUNA</label>
+                                <input
+                                    type="text"
+                                    value={editUsrInisial}
+                                    onChange={(e) => setEditUsrInisial(e.target.value.toUpperCase())}
+                                    placeholder="Contoh: AND"
+                                    maxLength={3}
+                                    className="w-full custom-input p-3 text-xs uppercase"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-neutral-500 font-semibold mb-1">ALAMAT EMAIL</label>
+                                <input
+                                    type="email"
+                                    value={editUsrEmail}
+                                    onChange={(e) => setEditUsrEmail(e.target.value)}
+                                    placeholder="Contoh: andi@example.com"
+                                    className="w-full custom-input p-3 text-xs"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-neutral-500 font-semibold mb-1">KATA SANDI BARU</label>
+                                <input
+                                    type="password"
+                                    value={editUsrPassword}
+                                    onChange={(e) => setEditUsrPassword(e.target.value)}
+                                    placeholder="Kosongkan jika tidak ingin diubah..."
+                                    className="w-full custom-input p-3 text-xs"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-neutral-500 font-semibold mb-1">ROLE SISTEM</label>
+                                <select
+                                    value={editUsrRole}
+                                    onChange={(e) => setEditUsrRole(e.target.value)}
+                                    className="w-full custom-input p-2.5 text-xs"
+                                >
+                                    <option value="staff">Staff</option>
+                                    <option value="manager">Manager</option>
+                                    <option value="partner">Partner</option>
+                                    <option value="admin">Admin</option>
+                                </select>
+                            </div>
+                            <div className="flex justify-end gap-3 pt-4 border-t border-neutral-100">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowEditUserModal(false);
+                                        setEditUserData(null);
+                                    }}
+                                    className="px-4 py-2 border border-neutral-200 text-neutral-600 rounded-lg hover:bg-neutral-50 text-xs transition"
+                                >
+                                    Batal
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="btn-glow-indigo text-xs font-semibold px-4 py-2 rounded-lg"
+                                >
+                                    Simpan Perubahan
                                 </button>
                             </div>
                         </form>

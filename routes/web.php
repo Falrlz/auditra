@@ -27,6 +27,7 @@ Route::middleware('auth')->group(function () {
     // Admin routes
     Route::middleware('role:admin')->group(function () {
         Route::post('/users', [\App\Http\Controllers\UserController::class, 'store'])->name('users.store');
+        Route::post('/users/{user}', [\App\Http\Controllers\UserController::class, 'update'])->name('users.update');
         Route::delete('/users/{user}', [\App\Http\Controllers\UserController::class, 'destroy'])->name('users.destroy');
         Route::post('/clients', [AuditFormController::class, 'storeClient'])->name('clients.store');
         Route::post('/clients/{client}', [AuditFormController::class, 'updateClient'])->name('clients.update');

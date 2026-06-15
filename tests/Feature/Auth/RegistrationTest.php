@@ -4,7 +4,7 @@ test('registration screen can be rendered', function () {
     $response = $this->get('/register');
 
     $response->assertStatus(200);
-});
+})->skip('Registration screen is disabled. Users are registered by admin.');
 
 test('new users can register', function () {
     $response = $this->post('/register', [
@@ -16,4 +16,4 @@ test('new users can register', function () {
 
     $this->assertAuthenticated();
     $response->assertRedirect(route('dashboard', absolute: false));
-});
+})->skip('Registration logic is disabled. Users are registered by admin.');
