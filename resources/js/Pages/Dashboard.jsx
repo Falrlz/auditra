@@ -17,6 +17,11 @@ export default function Dashboard({ auth, clients, allUsers }) {
 
     const activeClient = clients.find(c => String(c.id) === String(selectedClientId)) || null;
 
+    const formatCurrency = (val) => {
+        if (!val && val !== 0) return '-';
+        return 'Rp ' + Number(val).toLocaleString('id-ID');
+    };
+
     const handleSelectClient = (client) => {
         setSelectedClientId(client.id);
         localStorage.setItem('auditra_selected_client_id', client.id);
@@ -171,7 +176,7 @@ export default function Dashboard({ auth, clients, allUsers }) {
     // Team Assignment Actions
     const handleOpenTeamModal = (client) => {
         setTeamClient(client);
-        
+
         if (client.team && client.team.length > 0) {
             setTeamRows(client.team.map(t => ({
                 user_id: String(t.id),
@@ -205,7 +210,7 @@ export default function Dashboard({ auth, clients, allUsers }) {
     const handleTeamSubmit = (e) => {
         e.preventDefault();
         const validRows = teamRows.filter(row => row.user_id !== '');
-        
+
         router.post(route('clients.team.update', teamClient.id), {
             team: validRows
         }, {
@@ -331,26 +336,10 @@ export default function Dashboard({ auth, clients, allUsers }) {
                                         {activeTab === 'users' ? 'Kelola User Sistem' : 'Daftar Perikatan Audit'}
                                     </h2>
                                     <p className="text-xs text-neutral-400 font-medium">
-                                        {activeTab === 'users' ? 'Kelola akun & hak akses untuk Linda, Sandra, Joko, Andi, Saipul.' : 'Pilih perikatan klien untuk mengelola laporan A10 dan laporan D10.'}
+                                        {activeTab === 'users' ? 'Kelola akun & hak akses untuk Linda, Sandra, Joko, Andi, Saipul.' : 'Pilih perikatan klien untuk mengelola laporan'}
                                     </p>
                                 </>
                             )}
-                        </div>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-
-
-                        <div className="hidden md:flex items-center gap-3 bg-neutral-50/80 px-4 py-2 rounded-xl border border-neutral-200/60 shadow-sm backdrop-blur-sm">
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
-                                {user.name.charAt(0).toUpperCase()}
-                            </div>
-                            <div className="text-left">
-                                <span className="block text-[9px] text-neutral-400 font-bold uppercase tracking-wider">PENGGUNA AKTIF ({user.inisial || '-'})</span>
-                                <span className="text-xs text-neutral-600 font-medium">
-                                    👋 Halo, <strong className="text-[#0071e3] font-bold">{user.name}</strong>
-                                </span>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -702,10 +691,7 @@ export default function Dashboard({ auth, clients, allUsers }) {
                                                 return (
                                                     <tr key={client.id} className="hover:bg-neutral-50/50 transition">
                                                         <td className="py-4 px-6 font-bold text-neutral-900">
-                                                            <button onClick={() => handleSelectClient(client)} className="hover:text-[#0071e3] text-left flex items-center gap-2">
-                                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-neutral-400">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.6-3.7A2.25 2.25 0 0012 9H4.5A2.25 2.25 0 002.25 11.25V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V12a2.25 2.25 0 00-2.25-2.25H12" />
-                                                                </svg>
+                                                            <button onClick={() => handleSelectClient(client)} className="hover:text-[#0071e3] text-left">
                                                                 {client.name}
                                                             </button>
                                                         </td>
@@ -862,8 +848,8 @@ export default function Dashboard({ auth, clients, allUsers }) {
                                     type="button"
                                     onClick={() => setActiveDetailTab(idx)}
                                     className={`flex-1 py-2 px-4 text-xs font-bold rounded-lg transition-all duration-200 ${activeDetailTab === idx
-                                            ? 'bg-white text-[#0071e3] shadow-sm'
-                                            : 'text-neutral-500 hover:text-neutral-800'
+                                        ? 'bg-white text-[#0071e3] shadow-sm'
+                                        : 'text-neutral-500 hover:text-neutral-800'
                                         }`}
                                 >
                                     {tab}
@@ -899,7 +885,9 @@ export default function Dashboard({ auth, clients, allUsers }) {
                                         </div>
 
                                         <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm space-y-4">
-                                            <h4 className="text-xs font-extrabold uppercase tracking-wider text-neutral-400">Tim Audit & Kesimpulan Laporan</h4>
+                                            <h4 className="text-xs font-extrabold uppercase tracking-wider text-neutral-400">
+                                                {viewDetailForm.form_type === 'D10' ? 'Tim Audit & Ringkasan Materialitas' : 'Tim Audit & Kesimpulan Laporan'}
+                                            </h4>
                                             <div className="space-y-3">
                                                 <div className="grid grid-cols-3 gap-2 text-xs">
                                                     <div className="bg-neutral-50 p-2 rounded-xl border border-neutral-100/80">
@@ -915,16 +903,33 @@ export default function Dashboard({ auth, clients, allUsers }) {
                                                         <span className="text-neutral-800 font-bold block text-center truncate mt-0.5">{viewDetailForm.approver?.name || '-'}</span>
                                                     </div>
                                                 </div>
-                                                <div className="grid grid-cols-2 gap-4 pt-2 border-t border-neutral-100">
-                                                    <div className="bg-red-50/50 p-2.5 rounded-xl border border-red-100 text-center">
-                                                        <span className="text-[9px] text-red-500 block font-bold uppercase tracking-wider">LEVEL RISIKO</span>
-                                                        <span className="text-red-600 font-extrabold text-sm mt-0.5 block">{viewDetailForm.section_data?.section_b?.level_risiko || '-'}</span>
+                                                {viewDetailForm.form_type === 'D10' ? (
+                                                    <div className="grid grid-cols-3 gap-2 pt-2 border-t border-neutral-100 text-center">
+                                                        <div className="bg-blue-50/50 p-2 rounded-xl border border-blue-100">
+                                                            <span className="text-[8px] text-blue-600 block font-bold uppercase tracking-wider">OVERALL MAT.</span>
+                                                            <span className="text-blue-700 font-extrabold text-[11px] mt-0.5 block">{formatCurrency(viewDetailForm.section_data?.overall_materiality)}</span>
+                                                        </div>
+                                                        <div className="bg-indigo-50/50 p-2 rounded-xl border border-indigo-100">
+                                                            <span className="text-[8px] text-indigo-600 block font-bold uppercase tracking-wider">PERFORMANCE</span>
+                                                            <span className="text-indigo-700 font-extrabold text-[11px] mt-0.5 block">{formatCurrency(viewDetailForm.section_data?.performance_materiality)}</span>
+                                                        </div>
+                                                        <div className="bg-emerald-50/50 p-2 rounded-xl border border-emerald-100">
+                                                            <span className="text-[8px] text-emerald-600 block font-bold uppercase tracking-wider">CLEARLY TRIVIAL</span>
+                                                            <span className="text-emerald-700 font-extrabold text-[11px] mt-0.5 block">{formatCurrency(viewDetailForm.section_data?.tolerable_error)}</span>
+                                                        </div>
                                                     </div>
-                                                    <div className="bg-green-50/50 p-2.5 rounded-xl border border-green-100 text-center">
-                                                        <span className="text-[9px] text-green-600 block font-bold uppercase tracking-wider">KEPUTUSAN</span>
-                                                        <span className="text-green-700 font-extrabold text-sm mt-0.5 block">{viewDetailForm.section_data?.section_b?.kesimpulan || '-'}</span>
+                                                ) : (
+                                                    <div className="grid grid-cols-2 gap-4 pt-2 border-t border-neutral-100">
+                                                        <div className="bg-red-50/50 p-2.5 rounded-xl border border-red-100 text-center">
+                                                            <span className="text-[9px] text-red-500 block font-bold uppercase tracking-wider">LEVEL RISIKO</span>
+                                                            <span className="text-red-600 font-extrabold text-sm mt-0.5 block">{viewDetailForm.section_data?.section_b?.level_risiko || '-'}</span>
+                                                        </div>
+                                                        <div className="bg-green-50/50 p-2.5 rounded-xl border border-green-100 text-center">
+                                                            <span className="text-[9px] text-green-600 block font-bold uppercase tracking-wider">KEPUTUSAN</span>
+                                                            <span className="text-green-700 font-extrabold text-sm mt-0.5 block">{viewDetailForm.section_data?.section_b?.kesimpulan || '-'}</span>
+                                                        </div>
                                                     </div>
-                                                </div>
+                                                )}
                                             </div>
                                         </div>
                                     </div>
@@ -986,7 +991,7 @@ export default function Dashboard({ auth, clients, allUsers }) {
                                 <div className="space-y-6 animate-fade-in-up">
                                     <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm space-y-4">
                                         <h4 className="text-sm font-extrabold text-neutral-800 border-b pb-2">B. Materialitas Pelaksanaan & Pertimbangan Kualitatif</h4>
-                                        
+
                                         <div className="space-y-2 text-xs">
                                             {viewDetailForm.section_data?.qualitative_questions?.map((item) => (
                                                 <div key={item.no} className="p-3 bg-neutral-50/50 border border-neutral-200/60 rounded-xl flex justify-between items-center text-xs gap-3">
