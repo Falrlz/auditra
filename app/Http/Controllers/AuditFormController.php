@@ -215,6 +215,68 @@ class AuditFormController extends Controller
     }
 
     /**
+     * Show form for creating a new C10 audit form.
+     */
+    public function createC10(Request $request)
+    {
+        $request->validate([
+            'client_id' => 'required|exists:clients,id',
+        ]);
+
+        $user = Auth::user();
+        $client = Client::findOrFail($request->client_id);
+        
+        $teamRole = $user->roleInClient($client->id);
+        if ($teamRole !== 'anggota') {
+            abort(403, 'Hanya Anggota tim perikatan yang dapat mengisi form.');
+        }
+
+        return Inertia::render('AuditForm/Edit', [
+            'client' => [
+                'id' => $client->id,
+                'name' => $client->name,
+                'book_year' => $client->book_year,
+                'schedule' => $client->schedule,
+            ],
+            'formType' => 'C10',
+            'formToEdit' => null,
+        ]);
+    }
+
+    /**
+     * Show form for editing an existing C10 audit form.
+     */
+    public function editC10(AuditForm $auditForm)
+    {
+        $user = Auth::user();
+        $client = Client::findOrFail($auditForm->client_id);
+
+        $teamRole = $user->roleInClient($auditForm->client_id);
+        if ($teamRole !== 'anggota' || $auditForm->preparer_id !== $user->id) {
+            abort(403, 'Hanya Anggota pembuat form yang dapat melakukan perubahan.');
+        }
+
+        if ($auditForm->form_type !== 'C10') {
+            abort(400, 'Tipe laporan tidak sesuai.');
+        }
+
+        if (!in_array($auditForm->status, ['draft', 'rejected'])) {
+            abort(400, 'Laporan yang sudah disubmit tidak dapat diubah.');
+        }
+
+        return Inertia::render('AuditForm/Edit', [
+            'client' => [
+                'id' => $client->id,
+                'name' => $client->name,
+                'book_year' => $client->book_year,
+                'schedule' => $client->schedule,
+            ],
+            'formType' => 'C10',
+            'formToEdit' => $auditForm,
+        ]);
+    }
+
+    /**
      * Show a single audit form.
      */
     public function show(AuditForm $auditForm)
@@ -243,7 +305,7 @@ class AuditFormController extends Controller
         
         $validated = $request->validate([
             'client_id' => 'required|exists:clients,id',
-            'form_type' => 'required|string|in:A10,D10',
+            'form_type' => 'required|string|in:A10,D10,C10',
             'section_data' => 'required|array',
         ]);
 

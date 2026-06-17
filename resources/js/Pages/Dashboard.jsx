@@ -82,9 +82,15 @@ export default function Dashboard({ auth, clients, allUsers }) {
         router.visit(route('d10.create', { client_id: activeClient.id }));
     };
 
+    const handleCreateC10 = () => {
+        router.visit(route('c10.create', { client_id: activeClient.id }));
+    };
+
     const handleEditForm = (form) => {
         if (form.form_type === 'D10') {
             router.visit(route('d10.edit', form.id));
+        } else if (form.form_type === 'C10') {
+            router.visit(route('c10.edit', form.id));
         } else {
             router.visit(route('a10.edit', form.id));
         }
@@ -574,6 +580,87 @@ export default function Dashboard({ auth, clients, allUsers }) {
                                                     </tr>
                                                 );
                                             })()}
+
+                                            {/* Baris 3: C10 */}
+                                            {(() => {
+                                                const formC10 = activeClient.forms.find(f => f.form_type === 'C10');
+                                                const canEdit = activeClient.team_role === 'anggota' && (!formC10 || formC10.status === 'draft' || formC10.status === 'rejected');
+                                                const isPendingReview = formC10 && (
+                                                    (formC10.status === 'pending_ketua_tim' && activeClient.team_role === 'ketua_tim') ||
+                                                    (formC10.status === 'pending_supervisor' && activeClient.team_role === 'supervisor') ||
+                                                    (formC10.status === 'pending_partner' && activeClient.team_role === 'partner')
+                                                );
+
+                                                return (
+                                                    <tr className="hover:bg-neutral-50/30 transition">
+                                                        <td className="py-5 px-6 font-extrabold text-emerald-600">C10</td>
+                                                        <td className="py-5 px-6">
+                                                            <div className="font-bold text-neutral-900">Worksheets</div>
+                                                        </td>
+                                                        <td className="py-5 px-6">
+                                                            {formC10 ? renderStatusBadge(formC10.status) : (
+                                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border bg-neutral-100 text-neutral-400 border-neutral-200/60">
+                                                                    Belum Dibuat
+                                                                </span>
+                                                            )}
+                                                        </td>
+                                                        <td className="py-5 px-6 text-xs text-neutral-500 space-y-1">
+                                                            {formC10 ? (
+                                                                <>
+                                                                    <div>Disiapkan oleh: <strong className="text-neutral-700 font-bold">{formC10.preparer?.name || '-'} ({formC10.preparer?.inisial || '-'})</strong></div>
+                                                                    {formC10.reject_reason && <div className="text-red-500 font-medium mt-0.5">Alasan Penolakan: <strong>"{formC10.reject_reason}"</strong></div>}
+                                                                </>
+                                                            ) : (
+                                                                <span className="text-neutral-400">-</span>
+                                                            )}
+                                                        </td>
+                                                        <td className="py-5 px-6 text-right">
+                                                            <div className="flex justify-end gap-1.5 flex-wrap">
+                                                                {formC10 && (
+                                                                    <button
+                                                                        onClick={() => handleOpenDetail(formC10)}
+                                                                        className="px-3 py-1.5 border border-neutral-200 hover:border-neutral-300 text-neutral-600 hover:text-neutral-800 rounded-lg hover:bg-neutral-50 text-xs font-bold transition duration-200"
+                                                                    >
+                                                                        Pratinjau
+                                                                    </button>
+                                                                )}
+
+                                                                {canEdit && (
+                                                                    <>
+                                                                        <button
+                                                                            onClick={formC10 ? () => handleEditForm(formC10) : handleCreateC10}
+                                                                            className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-[#0071e3] border border-blue-100 rounded-lg text-xs font-bold transition duration-200"
+                                                                        >
+                                                                            {formC10 ? 'Edit' : 'Isi Form'}
+                                                                        </button>
+                                                                        {formC10 && (
+                                                                            <button
+                                                                                onClick={() => handleSubmitToReview(formC10.id)}
+                                                                                className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-bold transition duration-200"
+                                                                            >
+                                                                                Kirim Review
+                                                                            </button>
+                                                                        )}
+                                                                    </>
+                                                                )}
+
+                                                                {isPendingReview && (
+                                                                    <button
+                                                                        onClick={() => handleOpenReview(formC10)}
+                                                                        className="px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-xs font-bold transition duration-200"
+                                                                    >
+                                                                        Review
+                                                                    </button>
+                                                                )}
+
+                                                                {!formC10 && !canEdit && (
+                                                                    <span className="text-xs text-neutral-400 font-medium">Menunggu Staff Anggota</span>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })()}
                                         </tbody>
                                     </table>
                                 </div>
@@ -688,6 +775,7 @@ export default function Dashboard({ auth, clients, allUsers }) {
                                             clients.map((client) => {
                                                 const formA10 = client.forms.find(f => f.form_type === 'A10');
                                                 const formD10 = client.forms.find(f => f.form_type === 'D10');
+                                                const formC10 = client.forms.find(f => f.form_type === 'C10');
                                                 return (
                                                     <tr key={client.id} className="hover:bg-neutral-50/50 transition">
                                                         <td className="py-4 px-6 font-bold text-neutral-900">
@@ -701,6 +789,7 @@ export default function Dashboard({ auth, clients, allUsers }) {
                                                             <div className="flex gap-2">
                                                                 <span className={`px-2 py-0.5 rounded border text-[9px] font-bold ${formA10 ? 'bg-blue-50 border-blue-200 text-[#0071e3]' : 'bg-neutral-50 border-neutral-200 text-neutral-400'}`}>A10</span>
                                                                 <span className={`px-2 py-0.5 rounded border text-[9px] font-bold ${formD10 ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-neutral-50 border-neutral-200 text-neutral-400'}`}>D10</span>
+                                                                <span className={`px-2 py-0.5 rounded border text-[9px] font-bold ${formC10 ? 'bg-emerald-50 border-emerald-200 text-emerald-600' : 'bg-neutral-50 border-neutral-200 text-neutral-400'}`}>C10</span>
                                                             </div>
                                                         </td>
                                                         <td className="py-4 px-6 text-right">
@@ -841,6 +930,8 @@ export default function Dashboard({ auth, clients, allUsers }) {
                         <div className="flex bg-neutral-100 p-1 rounded-xl mb-6 overflow-x-auto whitespace-nowrap scrollbar-none gap-1 shrink-0">
                             {(viewDetailForm.form_type === 'D10'
                                 ? ['Ringkasan Penugasan', 'Kalkulator Materialitas (A)', 'Performance & Tolerable Limit (B, C)', 'Mapping Saldo Akun (D)']
+                                : viewDetailForm.form_type === 'C10'
+                                ? ['Ringkasan Penugasan', 'Kertas Kerja (Worksheets)']
                                 : ['Ringkasan Penugasan', 'Pemahaman SA 210', 'Latar Belakang & GC', 'Akuntansi & Bantuan Klien', 'Evaluasi Kualitatif']
                             ).map((tab, idx) => (
                                 <button
@@ -918,6 +1009,11 @@ export default function Dashboard({ auth, clients, allUsers }) {
                                                             <span className="text-emerald-700 font-extrabold text-[11px] mt-0.5 block">{formatCurrency(viewDetailForm.section_data?.tolerable_error)}</span>
                                                         </div>
                                                     </div>
+                                                ) : viewDetailForm.form_type === 'C10' ? (
+                                                    <div className="bg-emerald-50/50 p-2.5 rounded-xl border border-emerald-100 text-center">
+                                                        <span className="text-[9px] text-emerald-600 block font-bold uppercase tracking-wider">STATUS KERTAS KERJA</span>
+                                                        <span className="text-emerald-700 font-extrabold text-sm mt-0.5 block">Dalam Persiapan</span>
+                                                    </div>
                                                 ) : (
                                                     <div className="grid grid-cols-2 gap-4 pt-2 border-t border-neutral-100">
                                                         <div className="bg-red-50/50 p-2.5 rounded-xl border border-red-100 text-center">
@@ -932,6 +1028,23 @@ export default function Dashboard({ auth, clients, allUsers }) {
                                                 )}
                                             </div>
                                         </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* C10 - TAB 2: Worksheets Placeholder */}
+                            {activeDetailTab === 1 && viewDetailForm.form_type === 'C10' && (
+                                <div className="space-y-6 animate-fade-in-up">
+                                    <div className="bg-white p-6 rounded-2xl border border-neutral-200 shadow-sm text-center py-12">
+                                        <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-100">
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                                            </svg>
+                                        </div>
+                                        <h4 className="text-base font-bold text-neutral-800">Kertas Kerja C10 Worksheets</h4>
+                                        <p className="text-xs text-neutral-500 mt-2 max-w-md mx-auto">
+                                            Dokumen ini sedang dalam tahap persiapan kerja. Anda dapat menyunting dan mereview laporan ini sesuai alur persetujuan.
+                                        </p>
                                     </div>
                                 </div>
                             )}

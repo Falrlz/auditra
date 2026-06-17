@@ -44,6 +44,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/a10/{auditForm}/edit', [AuditFormController::class, 'editA10'])->name('a10.edit');
     Route::get('/d10/create', [AuditFormController::class, 'createD10'])->name('d10.create');
     Route::get('/d10/{auditForm}/edit', [AuditFormController::class, 'editD10'])->name('d10.edit');
+    Route::get('/c10/create', [AuditFormController::class, 'createC10'])->name('c10.create');
+    Route::get('/c10/{auditForm}/edit', [AuditFormController::class, 'editC10'])->name('c10.edit');
 
     Route::get('/audit-forms/{auditForm}', [AuditFormController::class, 'show'])->name('audit-forms.show');
     Route::post('/audit-forms', [AuditFormController::class, 'store'])->name('audit-forms.store');

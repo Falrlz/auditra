@@ -2,6 +2,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, router } from '@inertiajs/react';
 import AuditFormWizard from '@/Components/AuditFormWizard';
 import AuditFormD10Wizard from '@/Components/AuditFormD10Wizard';
+import AuditFormC10Wizard from '@/Components/AuditFormC10Wizard';
 import React from 'react';
 
 export default function Edit({ client, formType, formToEdit }) {
@@ -39,6 +40,16 @@ export default function Edit({ client, formType, formToEdit }) {
                 <div className="max-w-7xl mx-auto bg-white p-6 rounded-2xl border border-neutral-200 shadow-sm">
                     {formType === 'D10' ? (
                         <AuditFormD10Wizard
+                            formToEdit={formToEdit}
+                            clientId={client.id}
+                            clientName={client.name}
+                            bookYear={client.book_year}
+                            schedule={client.schedule}
+                            onClose={handleClose}
+                            onSaveSuccess={handleSaveSuccess}
+                        />
+                    ) : formType === 'C10' ? (
+                        <AuditFormC10Wizard
                             formToEdit={formToEdit}
                             clientId={client.id}
                             clientName={client.name}
