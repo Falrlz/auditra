@@ -2,10 +2,15 @@
 
 namespace App\Models;
 
+use Database\Factories\AuditFormFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class AuditForm extends Model
 {
+    /** @use HasFactory<AuditFormFactory> */
+    use HasFactory;
+
     protected $fillable = [
         'client_id',
         'form_type',
