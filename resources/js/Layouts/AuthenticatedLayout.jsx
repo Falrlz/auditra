@@ -4,7 +4,24 @@ import { useState } from 'react';
 
 export default function AuthenticatedLayout({ header, children }) {
     const user = usePage().props.auth.user;
-    const [showingMobileSidebar, setShowingMobileSidebar] = useState(false);    const hasUsersQuery = typeof window !== 'undefined' && window.location.search.includes('tab=users');
+    const [showingMobileSidebar, setShowingMobileSidebar] = useState(false);
+    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+        if (typeof window !== 'undefined') {
+            return localStorage.getItem('sidebar-collapsed') === 'true';
+        }
+        return false;
+    });
+
+    const pageUrl = usePage().url;
+    const hasUsersQuery = pageUrl.includes('tab=users');
+
+    const toggleSidebar = () => {
+        setIsSidebarCollapsed((prev) => {
+            const newState = !prev;
+            localStorage.setItem('sidebar-collapsed', String(newState));
+            return newState;
+        });
+    };
 
     const menuItems = [
         {
@@ -40,72 +57,149 @@ export default function AuthenticatedLayout({ header, children }) {
             ),
         },
     ];
-    const sidebarContent = (
-        <div className="flex flex-col h-full bg-white/95 backdrop-blur-xl border-r border-neutral-200/80">
+
+    const renderSidebarContent = (isCollapsed) => (
+        <div className="flex flex-col h-full bg-white/95 backdrop-blur-xl border-r border-neutral-200/80 relative">
             {/* Logo */}
-            <div className="h-16 px-6 border-b border-neutral-100 flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-500 to-[#0071e3] flex items-center justify-center shadow-md">
+            <div className="h-16 border-b border-neutral-100 flex items-center px-[22px] gap-2.5 transition-all duration-300 ease-in-out">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-500 to-[#0071e3] flex items-center justify-center shadow-md shrink-0">
                     <ApplicationLogo className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                <span className={`text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent transition-all duration-300 overflow-hidden whitespace-nowrap ${
+                    isCollapsed ? 'max-w-0 opacity-0 ml-0' : 'max-w-xs opacity-100 ml-2.5'
+                }`}>
                     Auditra
                 </span>
             </div>
 
             {/* Nav Links */}
-            <nav className="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
+            <nav className={`flex-1 py-6 space-y-1.5 transition-all duration-300 ${
+                isCollapsed ? 'px-3 overflow-visible' : 'px-4 overflow-y-auto'
+            }`}>
                 {menuItems.map((item) => (
                     <Link
                         key={item.name}
                         href={item.href}
-                        className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition duration-200 ${
+                        className={`flex items-center rounded-xl text-sm font-semibold transition-all duration-300 relative group/item ${
+                            isCollapsed ? 'px-3 py-3 justify-center' : 'px-4 py-3'
+                        } ${
                             item.active
                                 ? 'bg-[#0071e3] text-white shadow-md shadow-[#0071e3]/10'
                                 : 'text-neutral-600 hover:text-[#1d1d1f] hover:bg-neutral-100'
                         }`}
                     >
-                        <span className={item.active ? 'text-white' : 'text-neutral-400'}>
+                        <span className={`transition-colors duration-300 shrink-0 ${
+                            item.active ? 'text-white' : 'text-neutral-400 group-hover/item:text-[#0071e3]'
+                        }`}>
                             {item.icon}
                         </span>
-                        {item.name}
+                        <span className={`transition-all duration-300 overflow-hidden whitespace-nowrap ${
+                            isCollapsed ? 'max-w-0 opacity-0 ml-0' : 'max-w-xs opacity-100 ml-3'
+                        }`}>
+                            {item.name}
+                        </span>
+
+                        {/* Elegant Tooltip for Collapsed Sidebar */}
+                        {isCollapsed && (
+                            <div className="absolute left-full ml-4 px-3 py-2 bg-neutral-900 text-white text-xs rounded-lg opacity-0 invisible group-hover/item:opacity-100 group-hover/item:visible transition-all duration-200 delay-75 whitespace-nowrap z-50 shadow-md pointer-events-none">
+                                {item.name}
+                                <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-neutral-900"></div>
+                            </div>
+                        )}
                     </Link>
                 ))}
             </nav>
 
             {/* Bottom Profile card */}
-            <div className="p-4 border-t border-neutral-100 bg-neutral-50/50">
-                <div className="flex items-center gap-3 mb-4 px-2">
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
+            <div className={`border-t border-neutral-100 bg-neutral-50/50 transition-all duration-300 ${
+                isCollapsed ? 'p-3 flex flex-col items-center justify-center gap-3' : 'p-4'
+            }`}>
+                <div className={`flex items-center transition-all duration-300 ${
+                    isCollapsed ? 'justify-center relative group/avatar cursor-help' : 'gap-3 mb-4 px-2'
+                }`}>
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shadow-sm shrink-0">
                         {user.name.charAt(0).toUpperCase()}
                     </div>
-                    <div className="text-left overflow-hidden">
+                    <div className={`text-left overflow-hidden transition-all duration-300 ${
+                        isCollapsed ? 'max-w-0 opacity-0 ml-0 h-0 pointer-events-none' : 'max-w-xs opacity-100 ml-3'
+                    }`}>
                         <span className="block text-xs font-bold text-neutral-800 truncate">{user.name}</span>
                         <span className="inline-block text-[9px] px-1.5 py-0.5 rounded bg-blue-50 text-[#0071e3] border border-blue-100 capitalize font-bold mt-0.5">
                             {user.role.replace('_', ' ')}
                         </span>
                     </div>
+
+                    {/* Tooltip for User Profile when collapsed */}
+                    {isCollapsed && (
+                        <div className="absolute left-full ml-4 px-3 py-2 bg-neutral-900 text-white text-xs rounded-lg opacity-0 invisible group-hover/avatar:opacity-100 group-hover/avatar:visible transition-all duration-200 delay-75 whitespace-nowrap z-50 shadow-md pointer-events-none">
+                            <span className="block font-bold">{user.name}</span>
+                            <span className="block text-[10px] text-neutral-400 capitalize mt-0.5">{user.role.replace('_', ' ')}</span>
+                            <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-neutral-900"></div>
+                        </div>
+                    )}
                 </div>
 
-                <Link
-                    href={route('logout')}
-                    method="post"
-                    as="button"
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-neutral-100 hover:bg-red-50 text-neutral-600 hover:text-red-600 border border-neutral-200/60 hover:border-red-100 rounded-xl text-xs font-bold transition duration-200"
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
-                    </svg>
-                    Keluar Sistem
-                </Link>
+                {!isCollapsed && (
+                    <Link
+                        href={route('logout')}
+                        method="post"
+                        as="button"
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-neutral-100 hover:bg-red-50 text-neutral-600 hover:text-red-600 border border-neutral-200/60 hover:border-red-100 rounded-xl text-xs font-bold transition duration-200"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 shrink-0">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+                        </svg>
+                        Keluar Sistem
+                    </Link>
+                )}
+                {isCollapsed && (
+                    <Link
+                        href={route('logout')}
+                        method="post"
+                        as="button"
+                        className="w-10 h-10 flex items-center justify-center bg-neutral-100 hover:bg-red-50 text-neutral-600 hover:text-red-600 border border-neutral-200/60 hover:border-red-100 rounded-xl transition duration-200 group/logout relative"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 shrink-0">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+                        </svg>
+                        {/* Tooltip for Logout when collapsed */}
+                        <div className="absolute left-full ml-4 px-3 py-2 bg-red-600 text-white text-xs rounded-lg opacity-0 invisible group-hover/logout:opacity-100 group-hover/logout:visible transition-all duration-200 delay-75 whitespace-nowrap z-50 shadow-md pointer-events-none">
+                            Keluar Sistem
+                            <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-red-600"></div>
+                        </div>
+                    </Link>
+                )}
             </div>
+
+            {/* Collapse/Expand Toggle Button (Desktop only) */}
+            <button
+                onClick={toggleSidebar}
+                className="hidden md:flex absolute top-[18px] -right-3.5 w-7 h-7 bg-white hover:bg-neutral-50 border border-neutral-200/80 hover:border-neutral-300 rounded-full items-center justify-center text-neutral-500 hover:text-neutral-700 shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer z-50 group"
+                title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+            >
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={2.5}
+                    stroke="currentColor"
+                    className={`w-3.5 h-3.5 transition-transform duration-300 ease-in-out ${
+                        isCollapsed ? 'rotate-180 group-hover:translate-x-0.5' : 'group-hover:-translate-x-0.5'
+                    }`}
+                >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                </svg>
+            </button>
         </div>
     );
 
     return (
         <div className="min-h-screen app-bg-gradient text-neutral-800 selection:bg-[#0071e3] selection:text-white flex">
             {/* Desktop Sidebar (Left-only) */}
-            <aside className="hidden md:block w-64 h-screen sticky top-0 shrink-0 z-40">
-                {sidebarContent}
+            <aside className={`hidden md:block h-screen sticky top-0 shrink-0 z-40 transition-all duration-300 ease-in-out ${
+                isSidebarCollapsed ? 'w-20' : 'w-64'
+            }`}>
+                {renderSidebarContent(isSidebarCollapsed)}
             </aside>
 
             {/* Main Area */}
@@ -155,7 +249,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                 </svg>
                             </button>
                             <div className="h-full flex flex-col">
-                                {sidebarContent}
+                                {renderSidebarContent(false)}
                             </div>
                         </div>
                     </div>
