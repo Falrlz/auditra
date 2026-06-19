@@ -298,6 +298,9 @@ export default function Dashboard({ auth, clients, allUsers }) {
             pending_partner: 'bg-blue-50 text-blue-600 border-blue-200',
             final_approved: 'bg-green-50 text-green-700 border-green-200',
             rejected: 'bg-red-50 text-red-600 border-red-200',
+            rejected_ketua_tim: 'bg-red-50 text-red-600 border-red-200',
+            rejected_supervisor: 'bg-red-50 text-red-600 border-red-200',
+            rejected_partner: 'bg-red-50 text-red-600 border-red-200',
         };
 
         const labels = {
@@ -307,6 +310,9 @@ export default function Dashboard({ auth, clients, allUsers }) {
             pending_partner: 'Menunggu Partner',
             final_approved: 'Disetujui Final',
             rejected: 'Ditolak',
+            rejected_ketua_tim: 'Ditolak Ketua Tim',
+            rejected_supervisor: 'Ditolak Supervisor',
+            rejected_partner: 'Ditolak Partner',
         };
 
         return (
@@ -422,7 +428,7 @@ export default function Dashboard({ auth, clients, allUsers }) {
                                             {/* Baris 1: A10 */}
                                             {(() => {
                                                 const formA10 = activeClient.forms.find(f => f.form_type === 'A10');
-                                                const canEdit = activeClient.team_role === 'anggota' && (!formA10 || formA10.status === 'draft' || formA10.status === 'rejected');
+                                                const canEdit = activeClient.team_role === 'anggota' && (!formA10 || ['draft', 'rejected', 'rejected_ketua_tim', 'rejected_supervisor', 'rejected_partner'].includes(formA10.status));
                                                 const isPendingReview = formA10 && (
                                                     (formA10.status === 'pending_ketua_tim' && activeClient.team_role === 'ketua_tim') ||
                                                     (formA10.status === 'pending_supervisor' && activeClient.team_role === 'supervisor') ||
@@ -503,7 +509,7 @@ export default function Dashboard({ auth, clients, allUsers }) {
                                             {/* Baris 2: D10 */}
                                             {(() => {
                                                 const formD10 = activeClient.forms.find(f => f.form_type === 'D10');
-                                                const canEdit = activeClient.team_role === 'anggota' && (!formD10 || formD10.status === 'draft' || formD10.status === 'rejected');
+                                                const canEdit = activeClient.team_role === 'anggota' && (!formD10 || ['draft', 'rejected', 'rejected_ketua_tim', 'rejected_supervisor', 'rejected_partner'].includes(formD10.status));
                                                 const isPendingReview = formD10 && (
                                                     (formD10.status === 'pending_ketua_tim' && activeClient.team_role === 'ketua_tim') ||
                                                     (formD10.status === 'pending_supervisor' && activeClient.team_role === 'supervisor') ||
@@ -584,7 +590,7 @@ export default function Dashboard({ auth, clients, allUsers }) {
                                             {/* Baris 3: C10 */}
                                             {(() => {
                                                 const formC10 = activeClient.forms.find(f => f.form_type === 'C10');
-                                                const canEdit = activeClient.team_role === 'anggota' && (!formC10 || formC10.status === 'draft' || formC10.status === 'rejected');
+                                                const canEdit = activeClient.team_role === 'anggota' && (!formC10 || ['draft', 'rejected', 'rejected_ketua_tim', 'rejected_supervisor', 'rejected_partner'].includes(formC10.status));
                                                 const isPendingReview = formC10 && (
                                                     (formC10.status === 'pending_ketua_tim' && activeClient.team_role === 'ketua_tim') ||
                                                     (formC10.status === 'pending_supervisor' && activeClient.team_role === 'supervisor') ||

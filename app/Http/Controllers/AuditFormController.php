@@ -126,7 +126,7 @@ class AuditFormController extends Controller
             abort(400, 'Tipe laporan tidak sesuai.');
         }
 
-        if (!in_array($auditForm->status, ['draft', 'rejected'])) {
+        if (!in_array($auditForm->status, ['draft', 'rejected', 'rejected_ketua_tim', 'rejected_supervisor', 'rejected_partner'])) {
             abort(400, 'Laporan yang sudah disubmit tidak dapat diubah.');
         }
 
@@ -198,7 +198,7 @@ class AuditFormController extends Controller
             abort(400, 'Tipe laporan tidak sesuai.');
         }
 
-        if (!in_array($auditForm->status, ['draft', 'rejected'])) {
+        if (!in_array($auditForm->status, ['draft', 'rejected', 'rejected_ketua_tim', 'rejected_supervisor', 'rejected_partner'])) {
             abort(400, 'Laporan yang sudah disubmit tidak dapat diubah.');
         }
 
@@ -260,7 +260,7 @@ class AuditFormController extends Controller
             abort(400, 'Tipe laporan tidak sesuai.');
         }
 
-        if (!in_array($auditForm->status, ['draft', 'rejected'])) {
+        if (!in_array($auditForm->status, ['draft', 'rejected', 'rejected_ketua_tim', 'rejected_supervisor', 'rejected_partner'])) {
             abort(400, 'Laporan yang sudah disubmit tidak dapat diubah.');
         }
 
@@ -338,7 +338,7 @@ class AuditFormController extends Controller
             abort(403, 'Hanya Anggota pembuat form yang dapat melakukan perubahan.');
         }
 
-        if (!in_array($auditForm->status, ['draft', 'rejected'])) {
+        if (!in_array($auditForm->status, ['draft', 'rejected', 'rejected_ketua_tim', 'rejected_supervisor', 'rejected_partner'])) {
             abort(400, 'Laporan yang sudah disubmit tidak dapat diubah.');
         }
 
@@ -365,12 +365,20 @@ class AuditFormController extends Controller
             abort(403, 'Unauthorized.');
         }
 
-        if (!in_array($auditForm->status, ['draft', 'rejected'])) {
+        if (!in_array($auditForm->status, ['draft', 'rejected', 'rejected_ketua_tim', 'rejected_supervisor', 'rejected_partner'])) {
             abort(400, 'Laporan sudah disubmit sebelumnya.');
         }
 
+        // Determine next status based on previous status
+        $nextStatus = 'pending_ketua_tim';
+        if ($auditForm->status === 'rejected_supervisor') {
+            $nextStatus = 'pending_supervisor';
+        } elseif ($auditForm->status === 'rejected_partner') {
+            $nextStatus = 'pending_partner';
+        }
+
         $auditForm->update([
-            'status' => 'pending_ketua_tim',
+            'status' => $nextStatus,
             'reject_reason' => null,
         ]);
 
@@ -395,12 +403,24 @@ class AuditFormController extends Controller
         ]);
 
         if ($validated['action'] === 'reject') {
+            // Determine rejection status based on reviewer role
+            $rejectStatus = 'rejected';
+            if ($teamRole === 'ketua_tim') {
+                $rejectStatus = 'rejected_ketua_tim';
+            } elseif ($teamRole === 'supervisor') {
+                $rejectStatus = 'rejected_supervisor';
+            } elseif ($teamRole === 'partner') {
+                $rejectStatus = 'rejected_partner';
+            }
+
             $auditForm->update([
-                'status' => 'rejected',
+                'status' => $rejectStatus,
                 'reject_reason' => $validated['reject_reason'],
                 'reviewer_id' => $user->id,
             ]);
-            return redirect()->route('dashboard')->with('success', 'Laporan ditolak dan dikembalikan ke Anggota.');
+
+            $roleLabel = $teamRole === 'ketua_tim' ? 'Ketua Tim' : ($teamRole === 'supervisor' ? 'Supervisor' : 'Partner');
+            return redirect()->route('dashboard')->with('success', "Laporan ditolak oleh {$roleLabel} dan dikembalikan ke Anggota.");
         }
 
         // Approval flow
