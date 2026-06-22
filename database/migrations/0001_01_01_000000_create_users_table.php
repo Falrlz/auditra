@@ -20,6 +20,7 @@ return new class extends Migration
             $table->string('role')->default('staff'); // 'admin', 'partner', 'manager', 'staff'
             $table->string('inisial')->nullable();
             $table->rememberToken();
+            $table->softDeletes();
             $table->timestamps();
         });
 

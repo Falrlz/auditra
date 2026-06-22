@@ -506,88 +506,7 @@ export default function Dashboard({ auth, clients, allUsers }) {
                                                 );
                                             })()}
 
-                                            {/* Baris 2: D10 */}
-                                            {(() => {
-                                                const formD10 = activeClient.forms.find(f => f.form_type === 'D10');
-                                                const canEdit = activeClient.team_role === 'anggota' && (!formD10 || ['draft', 'rejected', 'rejected_ketua_tim', 'rejected_supervisor', 'rejected_partner'].includes(formD10.status));
-                                                const isPendingReview = formD10 && (
-                                                    (formD10.status === 'pending_ketua_tim' && activeClient.team_role === 'ketua_tim') ||
-                                                    (formD10.status === 'pending_supervisor' && activeClient.team_role === 'supervisor') ||
-                                                    (formD10.status === 'pending_partner' && activeClient.team_role === 'partner')
-                                                );
-
-                                                return (
-                                                    <tr className="hover:bg-neutral-50/30 transition">
-                                                        <td className="py-5 px-6 font-extrabold text-indigo-600">D10</td>
-                                                        <td className="py-5 px-6">
-                                                            <div className="font-bold text-neutral-900">Materialitas & Batas Salah Saji</div>
-                                                        </td>
-                                                        <td className="py-5 px-6">
-                                                            {formD10 ? renderStatusBadge(formD10.status) : (
-                                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border bg-neutral-100 text-neutral-400 border-neutral-200/60">
-                                                                    Belum Dibuat
-                                                                </span>
-                                                            )}
-                                                        </td>
-                                                        <td className="py-5 px-6 text-xs text-neutral-500 space-y-1">
-                                                            {formD10 ? (
-                                                                <>
-                                                                    <div>Disiapkan oleh: <strong className="text-neutral-700 font-bold">{formD10.preparer?.name || '-'} ({formD10.preparer?.inisial || '-'})</strong></div>
-                                                                    {formD10.reject_reason && <div className="text-red-500 font-medium mt-0.5">Alasan Penolakan: <strong>"{formD10.reject_reason}"</strong></div>}
-                                                                </>
-                                                            ) : (
-                                                                <span className="text-neutral-400">-</span>
-                                                            )}
-                                                        </td>
-                                                        <td className="py-5 px-6 text-right">
-                                                            <div className="flex justify-end gap-1.5 flex-wrap">
-                                                                {formD10 && (
-                                                                    <button
-                                                                        onClick={() => handleOpenDetail(formD10)}
-                                                                        className="px-3 py-1.5 border border-neutral-200 hover:border-neutral-300 text-neutral-600 hover:text-neutral-800 rounded-lg hover:bg-neutral-50 text-xs font-bold transition duration-200"
-                                                                    >
-                                                                        Pratinjau
-                                                                    </button>
-                                                                )}
-
-                                                                {canEdit && (
-                                                                    <>
-                                                                        <button
-                                                                            onClick={formD10 ? () => handleEditForm(formD10) : handleCreateD10}
-                                                                            className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-[#0071e3] border border-blue-100 rounded-lg text-xs font-bold transition duration-200"
-                                                                        >
-                                                                            {formD10 ? 'Edit' : 'Isi Form'}
-                                                                        </button>
-                                                                        {formD10 && (
-                                                                            <button
-                                                                                onClick={() => handleSubmitToReview(formD10.id)}
-                                                                                className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-bold transition duration-200"
-                                                                            >
-                                                                                Kirim Review
-                                                                            </button>
-                                                                        )}
-                                                                    </>
-                                                                )}
-
-                                                                {isPendingReview && (
-                                                                    <button
-                                                                        onClick={() => handleOpenReview(formD10)}
-                                                                        className="px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-xs font-bold transition duration-200"
-                                                                    >
-                                                                        Review
-                                                                    </button>
-                                                                )}
-
-                                                                {!formD10 && !canEdit && (
-                                                                    <span className="text-xs text-neutral-400 font-medium">Menunggu Staff Anggota</span>
-                                                                )}
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            })()}
-
-                                            {/* Baris 3: C10 */}
+                                            {/* Baris 2: C10 */}
                                             {(() => {
                                                 const formC10 = activeClient.forms.find(f => f.form_type === 'C10');
                                                 const canEdit = activeClient.team_role === 'anggota' && (!formC10 || ['draft', 'rejected', 'rejected_ketua_tim', 'rejected_supervisor', 'rejected_partner'].includes(formC10.status));
@@ -660,6 +579,87 @@ export default function Dashboard({ auth, clients, allUsers }) {
                                                                 )}
 
                                                                 {!formC10 && !canEdit && (
+                                                                    <span className="text-xs text-neutral-400 font-medium">Menunggu Staff Anggota</span>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })()}
+
+                                            {/* Baris 3: D10 */}
+                                            {(() => {
+                                                const formD10 = activeClient.forms.find(f => f.form_type === 'D10');
+                                                const canEdit = activeClient.team_role === 'anggota' && (!formD10 || ['draft', 'rejected', 'rejected_ketua_tim', 'rejected_supervisor', 'rejected_partner'].includes(formD10.status));
+                                                const isPendingReview = formD10 && (
+                                                    (formD10.status === 'pending_ketua_tim' && activeClient.team_role === 'ketua_tim') ||
+                                                    (formD10.status === 'pending_supervisor' && activeClient.team_role === 'supervisor') ||
+                                                    (formD10.status === 'pending_partner' && activeClient.team_role === 'partner')
+                                                );
+
+                                                return (
+                                                    <tr className="hover:bg-neutral-50/30 transition">
+                                                        <td className="py-5 px-6 font-extrabold text-indigo-600">D10</td>
+                                                        <td className="py-5 px-6">
+                                                            <div className="font-bold text-neutral-900">Materialitas & Batas Salah Saji</div>
+                                                        </td>
+                                                        <td className="py-5 px-6">
+                                                            {formD10 ? renderStatusBadge(formD10.status) : (
+                                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border bg-neutral-100 text-neutral-400 border-neutral-200/60">
+                                                                    Belum Dibuat
+                                                                </span>
+                                                            )}
+                                                        </td>
+                                                        <td className="py-5 px-6 text-xs text-neutral-500 space-y-1">
+                                                            {formD10 ? (
+                                                                <>
+                                                                    <div>Disiapkan oleh: <strong className="text-neutral-700 font-bold">{formD10.preparer?.name || '-'} ({formD10.preparer?.inisial || '-'})</strong></div>
+                                                                    {formD10.reject_reason && <div className="text-red-500 font-medium mt-0.5">Alasan Penolakan: <strong>"{formD10.reject_reason}"</strong></div>}
+                                                                </>
+                                                            ) : (
+                                                                <span className="text-neutral-400">-</span>
+                                                            )}
+                                                        </td>
+                                                        <td className="py-5 px-6 text-right">
+                                                            <div className="flex justify-end gap-1.5 flex-wrap">
+                                                                {formD10 && (
+                                                                    <button
+                                                                        onClick={() => handleOpenDetail(formD10)}
+                                                                        className="px-3 py-1.5 border border-neutral-200 hover:border-neutral-300 text-neutral-600 hover:text-neutral-800 rounded-lg hover:bg-neutral-50 text-xs font-bold transition duration-200"
+                                                                    >
+                                                                        Pratinjau
+                                                                    </button>
+                                                                )}
+
+                                                                {canEdit && (
+                                                                    <>
+                                                                        <button
+                                                                            onClick={formD10 ? () => handleEditForm(formD10) : handleCreateD10}
+                                                                            className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-[#0071e3] border border-blue-100 rounded-lg text-xs font-bold transition duration-200"
+                                                                        >
+                                                                            {formD10 ? 'Edit' : 'Isi Form'}
+                                                                        </button>
+                                                                        {formD10 && (
+                                                                            <button
+                                                                                onClick={() => handleSubmitToReview(formD10.id)}
+                                                                                className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-bold transition duration-200"
+                                                                            >
+                                                                                Kirim Review
+                                                                            </button>
+                                                                        )}
+                                                                    </>
+                                                                )}
+
+                                                                {isPendingReview && (
+                                                                    <button
+                                                                        onClick={() => handleOpenReview(formD10)}
+                                                                        className="px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-xs font-bold transition duration-200"
+                                                                    >
+                                                                        Review
+                                                                    </button>
+                                                                )}
+
+                                                                {!formD10 && !canEdit && (
                                                                     <span className="text-xs text-neutral-400 font-medium">Menunggu Staff Anggota</span>
                                                                 )}
                                                             </div>
@@ -794,8 +794,8 @@ export default function Dashboard({ auth, clients, allUsers }) {
                                                         <td className="py-4 px-6 text-xs font-semibold">
                                                             <div className="flex gap-2">
                                                                 <span className={`px-2 py-0.5 rounded border text-[9px] font-bold ${formA10 ? 'bg-blue-50 border-blue-200 text-[#0071e3]' : 'bg-neutral-50 border-neutral-200 text-neutral-400'}`}>A10</span>
-                                                                <span className={`px-2 py-0.5 rounded border text-[9px] font-bold ${formD10 ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-neutral-50 border-neutral-200 text-neutral-400'}`}>D10</span>
                                                                 <span className={`px-2 py-0.5 rounded border text-[9px] font-bold ${formC10 ? 'bg-emerald-50 border-emerald-200 text-emerald-600' : 'bg-neutral-50 border-neutral-200 text-neutral-400'}`}>C10</span>
+                                                                <span className={`px-2 py-0.5 rounded border text-[9px] font-bold ${formD10 ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-neutral-50 border-neutral-200 text-neutral-400'}`}>D10</span>
                                                             </div>
                                                         </td>
                                                         <td className="py-4 px-6 text-right">

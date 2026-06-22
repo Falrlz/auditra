@@ -13,10 +13,14 @@ return new class extends Migration
     {
         Schema::create('clients', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->string('book_year');
-            $table->string('schedule');
+            $table->string('nama');
+            $table->string('tahun_buku');
+            $table->string('jadwal');
+            $table->foreignId('dibuat_oleh')->nullable()->constrained('users')->onDelete('set null');
+            $table->softDeletes();
             $table->timestamps();
+
+            $table->unique(['nama', 'tahun_buku']);
         });
     }
 

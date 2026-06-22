@@ -3,14 +3,14 @@
 use App\Models\User;
 use App\Models\Client;
 use App\Models\EngagementTeam;
-use App\Models\AuditForm;
+use App\Models\A10;
 
 test('workflow: specific rejection and direct resubmission routing bypass', function () {
     // 1. Setup Client
     $client = Client::create([
-        'name' => 'PT Workflow Client',
-        'book_year' => '2026',
-        'schedule' => 'Workflow Schedule',
+        'nama' => 'PT Workflow Client',
+        'tahun_buku' => '2026',
+        'jadwal' => 'Workflow Schedule',
     ]);
 
     // 2. Setup Users
@@ -20,18 +20,17 @@ test('workflow: specific rejection and direct resubmission routing bypass', func
     $partner = User::factory()->create(['role' => 'partner']);
 
     // 3. Assign Roles in Client Engagement Team
-    EngagementTeam::create(['client_id' => $client->id, 'user_id' => $anggota->id, 'role' => 'anggota']);
-    EngagementTeam::create(['client_id' => $client->id, 'user_id' => $ketuaTim->id, 'role' => 'ketua_tim']);
-    EngagementTeam::create(['client_id' => $client->id, 'user_id' => $supervisor->id, 'role' => 'supervisor']);
-    EngagementTeam::create(['client_id' => $client->id, 'user_id' => $partner->id, 'role' => 'partner']);
+    EngagementTeam::create(['klien_id' => $client->id, 'user_id' => $anggota->id, 'peran' => 'anggota']);
+    EngagementTeam::create(['klien_id' => $client->id, 'user_id' => $ketuaTim->id, 'peran' => 'ketua_tim']);
+    EngagementTeam::create(['klien_id' => $client->id, 'user_id' => $supervisor->id, 'peran' => 'supervisor']);
+    EngagementTeam::create(['klien_id' => $client->id, 'user_id' => $partner->id, 'peran' => 'partner']);
 
     // 4. Anggota creates form A10 as draft
-    $form = AuditForm::create([
-        'client_id' => $client->id,
-        'form_type' => 'A10',
+    $form = A10::create([
+        'klien_id' => $client->id,
         'status' => 'draft',
-        'section_data' => ['notes' => 'Initial Draft Content'],
-        'preparer_id' => $anggota->id,
+        'form_a10' => ['notes' => 'Initial Draft Content'],
+        'pembuat_id' => $anggota->id,
     ]);
 
     // 5. Anggota submits form -> should go to pending_ketua_tim
@@ -52,7 +51,7 @@ test('workflow: specific rejection and direct resubmission routing bypass', func
 
     $form->refresh();
     $this->assertEquals('rejected_ketua_tim', $form->status);
-    $this->assertEquals('Need detail clarification by Ketua Tim', $form->reject_reason);
+    $this->assertEquals('Need detail clarification by Ketua Tim', $form->alasan_penolakan);
 
     // 7. Anggota can edit when status is rejected_ketua_tim
     $this->actingAs($anggota)

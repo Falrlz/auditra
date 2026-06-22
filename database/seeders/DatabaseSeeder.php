@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\User;
-use App\Models\AuditForm;
+use App\Models\A10;
 use App\Services\OdsParser;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -68,58 +68,62 @@ class DatabaseSeeder extends Seeder
 
         // 2. Seed Client
         $client = \App\Models\Client::updateOrCreate(
-            ['name' => 'PT EASTPARC HOTEL TBK'],
+            ['nama' => 'PT EASTPARC HOTEL TBK'],
             [
-                'book_year' => '31 Desember 2024',
-                'schedule' => 'Pre-Engagement (Analisi Penerimaan Dan Keberlanjutan Hubungan Dengan Klien)',
+                'tahun_buku' => '31 Desember 2024',
+                'jadwal' => 'Pre-Engagement (Analisi Penerimaan Dan Keberlanjutan Hubungan Dengan Klien)',
             ]
         );
 
         // 3. Seed Tim Perikatan
         \App\Models\EngagementTeam::updateOrCreate(
-            ['client_id' => $client->id, 'user_id' => $andi->id],
-            ['role' => 'anggota']
+            ['klien_id' => $client->id, 'user_id' => $andi->id],
+            ['peran' => 'anggota']
         );
         \App\Models\EngagementTeam::updateOrCreate(
-            ['client_id' => $client->id, 'user_id' => $saipul->id],
-            ['role' => 'ketua_tim']
+            ['klien_id' => $client->id, 'user_id' => $saipul->id],
+            ['peran' => 'ketua_tim']
         );
         \App\Models\EngagementTeam::updateOrCreate(
-            ['client_id' => $client->id, 'user_id' => $manager->id],
-            ['role' => 'supervisor']
+            ['klien_id' => $client->id, 'user_id' => $manager->id],
+            ['peran' => 'supervisor']
         );
         \App\Models\EngagementTeam::updateOrCreate(
-            ['client_id' => $client->id, 'user_id' => $partner->id],
-            ['role' => 'partner']
+            ['klien_id' => $client->id, 'user_id' => $partner->id],
+            ['peran' => 'partner']
         );
 
-        // 4. Parse a10.ods
+        // 4. Parse a10.ods or fallback to a10_db_dump.json
         $odsPath = base_path('a10.ods');
-        if (!file_exists($odsPath)) {
-            $this->command->error("a10.ods not found at " . $odsPath);
-            return;
+        $jsonDumpPath = base_path('a10_db_dump.json');
+        $sectionData = null;
+
+        if (file_exists($odsPath)) {
+            $parser = new OdsParser();
+            try {
+                $sheets = $parser->parse($odsPath);
+                $sheet0 = isset($sheets['A10']) ? $sheets['A10'] : array_values($sheets)[0];
+                $sectionData = $this->buildStructuredData($sheet0);
+            } catch (\Exception $e) {
+                $this->command->error("Failed to parse ODS data: " . $e->getMessage());
+            }
+        } elseif (file_exists($jsonDumpPath)) {
+            $sectionData = json_decode(file_get_contents($jsonDumpPath), true);
+            $this->command->info("Using fallback a10_db_dump.json for A10 seeding.");
         }
 
-        $parser = new OdsParser();
-        try {
-            $sheets = $parser->parse($odsPath);
-            $sheet0 = isset($sheets['A10']) ? $sheets['A10'] : array_values($sheets)[0];
-
-            // We will parse the cells of Sheet 0 to construct a rich structured JSON
-            $sectionData = $this->buildStructuredData($sheet0);
-
-            // 5. Create AuditForm Draft
-            AuditForm::create([
-                'client_id' => $client->id,
-                'form_type' => 'A10',
+        if ($sectionData) {
+            // 5. Create A10 Draft
+            A10::create([
+                'klien_id' => $client->id,
                 'status' => 'draft',
-                'section_data' => $sectionData,
-                'preparer_id' => $andi->id,
+                'form_a10' => $sectionData,
+                'pembuat_id' => $andi->id,
             ]);
 
-            $this->command->info("Database seeded successfully with users, client, engagement team, and a10.ods draft form.");
-        } catch (\Exception $e) {
-            $this->command->error("Failed to parse and seed ODS data: " . $e->getMessage());
+            $this->command->info("Database seeded successfully with users, client, engagement team, and A10 draft form.");
+        } else {
+            $this->command->error("Could not seed A10: neither a10.ods nor a10_db_dump.json was found.");
         }
     }
 

@@ -5,13 +5,14 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -76,14 +77,19 @@ class User extends Authenticatable
 
     public function clients()
     {
-        return $this->belongsToMany(Client::class, 'tim_perikatans')
-                    ->withPivot('role')
+        return $this->belongsToMany(Client::class, 'tim_perikatans', 'user_id', 'klien_id')
+                    ->withPivot('peran')
                     ->withTimestamps();
+    }
+
+    public function createdClients()
+    {
+        return $this->hasMany(Client::class, 'dibuat_oleh');
     }
 
     public function roleInClient($clientId)
     {
-        $teamMember = $this->timPerikatans()->where('client_id', $clientId)->first();
-        return $teamMember ? $teamMember->role : null;
+        $teamMember = $this->timPerikatans()->where('klien_id', $clientId)->first();
+        return $teamMember ? $teamMember->peran : null;
     }
 }

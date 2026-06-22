@@ -13,16 +13,16 @@ export default function AuditFormD10Wizard({ formToEdit, clientId, clientName, b
     const defaultSectionData = {
         jenis_kondisi: 'stabil', // stabil, tidak_stabil, pengembangan, likuiditas
         benchmark: 'laba_bersih', // laba_bersih, pendapatan, aset, ekuitas
-        overall_materiality: 2132000000,
+        overall_materiality: 0,
         performance_percent: 80, // default 80% as shown in screenshot
-        performance_materiality: 1705600000,
+        performance_materiality: 0,
         tolerable_percent: 5,
-        tolerable_error: 106600000,
+        tolerable_error: 0,
         benchmarks: {
-            pendapatan: { nominal: 95000000000, persen: 1.0, hasil: 950000000 },
-            laba_bersih: { nominal: 42637321475, persen: 5.0, hasil: 2131866074 },
-            aset: { nominal: 150000000000, persen: 1.0, hasil: 1500000000 },
-            ekuitas: { nominal: 80000000000, persen: 3.0, hasil: 2400000000 }
+            pendapatan: { nominal: 0, persen: 1.0, hasil: 0 },
+            laba_bersih: { nominal: 0, persen: 5.0, hasil: 0 },
+            aset: { nominal: 0, persen: 1.0, hasil: 0 },
+            ekuitas: { nominal: 0, persen: 3.0, hasil: 0 }
         },
         qualitative_questions: [
             { no: 1, description: 'Apakah salah saji tahun sebelumnya signifikan?', value: 'Ya', notes: '' },
@@ -307,7 +307,7 @@ export default function AuditFormD10Wizard({ formToEdit, clientId, clientName, b
                                 <tr>
                                     <td className="py-1.5 px-3 border-r border-neutral-300 font-semibold">Direview Oleh</td>
                                     <td className="py-1.5 px-3 border-r border-neutral-300">{formToEdit?.reviewed_at ? new Date(formToEdit.reviewed_at).toLocaleDateString('id-ID') : new Date().toLocaleDateString('id-ID')}</td>
-                                    <td className="py-1.5 px-3 uppercase font-bold text-neutral-600">{formToEdit?.reviewer?.inisial || 'KHO'}</td>
+                                    <td className="py-1.5 px-3 uppercase font-bold text-neutral-600">{formToEdit?.reviewer?.inisial || '-'}</td>
                                 </tr>
                                 <tr>
                                     <td className="py-1.5 px-3 border-r border-neutral-300 font-semibold">Disetujui Oleh</td>

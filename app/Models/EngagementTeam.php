@@ -10,14 +10,14 @@ class EngagementTeam extends Model
     protected $table = 'tim_perikatans';
 
     protected $fillable = [
-        'client_id',
+        'klien_id',
         'user_id',
-        'role', // 'anggota', 'supervisor', 'ketua_tim', 'partner'
+        'peran', // 'anggota', 'supervisor', 'ketua_tim', 'partner'
     ];
 
     public function client(): BelongsTo
     {
-        return $this->belongsTo(Client::class);
+        return $this->belongsTo(Client::class, 'klien_id');
     }
 
     public function user(): BelongsTo
