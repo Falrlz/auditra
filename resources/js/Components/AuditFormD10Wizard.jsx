@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useForm, usePage } from '@inertiajs/react';
 
-export default function AuditFormD10Wizard({ formToEdit, clientId, clientName, bookYear, schedule, onClose, onSaveSuccess }) {
+export default function AuditFormD10Wizard({ formToEdit, clientId, clientName, bookYear, schedule, onClose, onSaveSuccess, readOnly = false }) {
     const { auth } = usePage().props;
     const user = auth.user;
 
@@ -330,6 +330,7 @@ export default function AuditFormD10Wizard({ formToEdit, clientId, clientName, b
             </div>
 
             <form onSubmit={handleSave} className="space-y-6">
+                <fieldset disabled={readOnly} className="space-y-6 border-0 p-0 m-0 min-w-0">
                 {/* SECTION A */}
                 <div className="bg-white p-6 rounded-xl border border-neutral-200 shadow-2xs space-y-5">
                     <h3 className="text-base font-black text-neutral-800 border-b border-neutral-100 pb-2">
@@ -620,16 +621,18 @@ export default function AuditFormD10Wizard({ formToEdit, clientId, clientName, b
                                                 </span>
                                             </td>
                                             <td className="py-2 px-2 text-center bg-neutral-50/10">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleRemoveAccount(index)}
-                                                    className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition"
-                                                    title="Hapus baris"
-                                                >
-                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                                                    </svg>
-                                                </button>
+                                                {!readOnly && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleRemoveAccount(index)}
+                                                        className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition"
+                                                        title="Hapus baris"
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                                        </svg>
+                                                    </button>
+                                                )}
                                             </td>
                                         </tr>
                                     );
@@ -638,36 +641,51 @@ export default function AuditFormD10Wizard({ formToEdit, clientId, clientName, b
                         </table>
                     </div>
 
-                    <div className="pt-2">
-                        <button
-                            type="button"
-                            onClick={handleAddAccount}
-                            className="w-full py-2.5 bg-neutral-50 border border-dashed border-neutral-300 hover:bg-neutral-100 hover:border-neutral-400 text-neutral-600 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-2xs"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                            </svg>
-                            Tambah Baris Akun Baru
-                        </button>
-                    </div>
+                    {!readOnly && (
+                        <div className="pt-2">
+                            <button
+                                type="button"
+                                onClick={handleAddAccount}
+                                className="w-full py-2.5 bg-neutral-50 border border-dashed border-neutral-300 hover:bg-neutral-100 hover:border-neutral-400 text-neutral-600 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-2xs"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                                </svg>
+                                Tambah Baris Akun Baru
+                            </button>
+                        </div>
+                    )}
                 </div>
+                </fieldset>
 
                 {/* Footer Controls */}
                 <div className="flex justify-end items-center border-t border-neutral-200 pt-6 mt-6 gap-3">
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="px-5 py-3 border border-neutral-200 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50 rounded-xl text-xs font-bold transition duration-200"
-                    >
-                        Batal
-                    </button>
-                    <button
-                        type="submit"
-                        disabled={processing}
-                        className="px-6 py-3 bg-gradient-to-tr from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 disabled:opacity-40 rounded-xl text-xs font-bold shadow-md shadow-green-500/10 transition duration-200"
-                    >
-                        {processing ? 'Menyimpan...' : 'Simpan Laporan D10'}
-                    </button>
+                    {readOnly ? (
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="px-6 py-3 bg-[#0071e3] hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all duration-150 active:scale-[0.98] shadow-md shadow-blue-500/10"
+                        >
+                            Tutup Pratinjau
+                        </button>
+                    ) : (
+                        <>
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                className="px-5 py-3 border border-neutral-200 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50 rounded-xl text-xs font-bold transition duration-200"
+                            >
+                                Batal
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={processing}
+                                className="px-6 py-3 bg-gradient-to-tr from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 disabled:opacity-40 rounded-xl text-xs font-bold shadow-md shadow-green-500/10 transition duration-200"
+                            >
+                                {processing ? 'Menyimpan...' : 'Simpan Laporan D10'}
+                            </button>
+                        </>
+                    )}
                 </div>
             </form>
         </div>

@@ -1,6 +1,8 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, router } from '@inertiajs/react';
 import React, { useState } from 'react';
+import AuditFormWizard from '@/Components/AuditFormWizard';
+import AuditFormD10Wizard from '@/Components/AuditFormD10Wizard';
 import axios from 'axios';
 
 export default function Dashboard({ auth, clients, allUsers }) {
@@ -909,400 +911,148 @@ export default function Dashboard({ auth, clients, allUsers }) {
                 </div>
             )}
 
-            {/* PREVIEW DETAILS MODAL */}
             {viewDetailForm && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-900/40 backdrop-blur-sm p-4">
-                    <div className="glass-panel w-full max-w-4xl h-[90vh] max-h-[800px] p-6 rounded-2xl animate-fade-in-up border border-neutral-200 bg-white flex flex-col justify-between">
-                        <div className="flex justify-between items-start border-b border-neutral-200 pb-3 mb-4 shrink-0">
-                            <div>
-                                <h3 className="text-lg font-bold text-[#1d1d1f]">
-                                    Pratinjau Detail Laporan {viewDetailForm.form_type || 'A10'}
-                                </h3>
-                                <p className="text-xs text-neutral-400 font-medium mt-0.5">
-                                    Status Laporan: {renderStatusBadge(viewDetailForm.status)}
-                                </p>
-                            </div>
-                            <button
-                                onClick={() => setViewDetailForm(null)}
-                                className="p-1 rounded-lg text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 transition"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
-
-                        {/* Custom Segmented Control (Tabs Navigation) */}
-                        <div className="flex bg-neutral-100 p-1 rounded-xl mb-6 overflow-x-auto whitespace-nowrap scrollbar-none gap-1 shrink-0">
-                            {(viewDetailForm.form_type === 'D10'
-                                ? ['Ringkasan Penugasan', 'Kalkulator Materialitas (A)', 'Performance & Tolerable Limit (B, C)', 'Mapping Saldo Akun (D)']
-                                : viewDetailForm.form_type === 'C10'
-                                ? ['Ringkasan Penugasan', 'Kertas Kerja (Worksheets)']
-                                : ['Ringkasan Penugasan', 'Pemahaman SA 210', 'Latar Belakang & GC', 'Akuntansi & Bantuan Klien', 'Evaluasi Kualitatif']
-                            ).map((tab, idx) => (
-                                <button
-                                    key={tab}
-                                    type="button"
-                                    onClick={() => setActiveDetailTab(idx)}
-                                    className={`flex-1 py-2 px-4 text-xs font-bold rounded-lg transition-all duration-200 ${activeDetailTab === idx
-                                        ? 'bg-white text-[#0071e3] shadow-sm'
-                                        : 'text-neutral-500 hover:text-neutral-800'
-                                        }`}
-                                >
-                                    {tab}
-                                </button>
-                            ))}
-                        </div>
-
-                        {/* Tabs Content - Scrollable area */}
-                        <div className="flex-1 overflow-y-auto pr-1 text-sm space-y-6">
-
-                            {/* Tab 1: Ringkasan Penugasan */}
-                            {activeDetailTab === 0 && (
-                                <div className="space-y-6 animate-fade-in-up">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm space-y-4">
-                                            <h4 className="text-xs font-extrabold uppercase tracking-wider text-neutral-400">Informasi Klien</h4>
-                                            <div className="space-y-3">
-                                                <div>
-                                                    <span className="text-[10px] text-neutral-400 font-bold block">NAMA KLIEN</span>
-                                                    <span className="text-neutral-900 font-extrabold text-base">{activeClient?.name}</span>
-                                                </div>
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    <div>
-                                                        <span className="text-[10px] text-neutral-400 font-bold block">TAHUN BUKU</span>
-                                                        <span className="text-neutral-800 font-bold text-sm">{activeClient?.book_year}</span>
-                                                    </div>
-                                                    <div>
-                                                        <span className="text-[10px] text-neutral-400 font-bold block">SKEDUL / JASA</span>
-                                                        <span className="text-neutral-800 font-bold text-sm">{activeClient?.schedule || '-'}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm space-y-4">
-                                            <h4 className="text-xs font-extrabold uppercase tracking-wider text-neutral-400">
-                                                {viewDetailForm.form_type === 'D10' ? 'Tim Audit & Ringkasan Materialitas' : 'Tim Audit & Kesimpulan Laporan'}
-                                            </h4>
-                                            <div className="space-y-3">
-                                                <div className="grid grid-cols-3 gap-2 text-xs">
-                                                    <div className="bg-neutral-50 p-2 rounded-xl border border-neutral-100/80">
-                                                        <span className="text-[9px] text-neutral-400 block uppercase font-bold text-center">PREPARER</span>
-                                                        <span className="text-neutral-800 font-bold block text-center truncate mt-0.5">{viewDetailForm.preparer?.name || '-'}</span>
-                                                    </div>
-                                                    <div className="bg-neutral-50 p-2 rounded-xl border border-neutral-100/80">
-                                                        <span className="text-[9px] text-neutral-400 block uppercase font-bold text-center">REVIEWER</span>
-                                                        <span className="text-neutral-800 font-bold block text-center truncate mt-0.5">{viewDetailForm.reviewer?.name || '-'}</span>
-                                                    </div>
-                                                    <div className="bg-neutral-50 p-2 rounded-xl border border-neutral-100/80">
-                                                        <span className="text-[9px] text-neutral-400 block uppercase font-bold text-center">APPROVER</span>
-                                                        <span className="text-neutral-800 font-bold block text-center truncate mt-0.5">{viewDetailForm.approver?.name || '-'}</span>
-                                                    </div>
-                                                </div>
-                                                {viewDetailForm.form_type === 'D10' ? (
-                                                    <div className="grid grid-cols-3 gap-2 pt-2 border-t border-neutral-100 text-center">
-                                                        <div className="bg-blue-50/50 p-2 rounded-xl border border-blue-100">
-                                                            <span className="text-[8px] text-blue-600 block font-bold uppercase tracking-wider">OVERALL MAT.</span>
-                                                            <span className="text-blue-700 font-extrabold text-[11px] mt-0.5 block">{formatCurrency(viewDetailForm.section_data?.overall_materiality)}</span>
-                                                        </div>
-                                                        <div className="bg-indigo-50/50 p-2 rounded-xl border border-indigo-100">
-                                                            <span className="text-[8px] text-indigo-600 block font-bold uppercase tracking-wider">PERFORMANCE</span>
-                                                            <span className="text-indigo-700 font-extrabold text-[11px] mt-0.5 block">{formatCurrency(viewDetailForm.section_data?.performance_materiality)}</span>
-                                                        </div>
-                                                        <div className="bg-emerald-50/50 p-2 rounded-xl border border-emerald-100">
-                                                            <span className="text-[8px] text-emerald-600 block font-bold uppercase tracking-wider">CLEARLY TRIVIAL</span>
-                                                            <span className="text-emerald-700 font-extrabold text-[11px] mt-0.5 block">{formatCurrency(viewDetailForm.section_data?.tolerable_error)}</span>
-                                                        </div>
-                                                    </div>
-                                                ) : viewDetailForm.form_type === 'C10' ? (
-                                                    <div className="bg-emerald-50/50 p-2.5 rounded-xl border border-emerald-100 text-center">
-                                                        <span className="text-[9px] text-emerald-600 block font-bold uppercase tracking-wider">STATUS KERTAS KERJA</span>
-                                                        <span className="text-emerald-700 font-extrabold text-sm mt-0.5 block">Dalam Persiapan</span>
-                                                    </div>
-                                                ) : (
-                                                    <div className="grid grid-cols-2 gap-4 pt-2 border-t border-neutral-100">
-                                                        <div className="bg-red-50/50 p-2.5 rounded-xl border border-red-100 text-center">
-                                                            <span className="text-[9px] text-red-500 block font-bold uppercase tracking-wider">LEVEL RISIKO</span>
-                                                            <span className="text-red-600 font-extrabold text-sm mt-0.5 block">{viewDetailForm.section_data?.section_b?.level_risiko || '-'}</span>
-                                                        </div>
-                                                        <div className="bg-green-50/50 p-2.5 rounded-xl border border-green-100 text-center">
-                                                            <span className="text-[9px] text-green-600 block font-bold uppercase tracking-wider">KEPUTUSAN</span>
-                                                            <span className="text-green-700 font-extrabold text-sm mt-0.5 block">{viewDetailForm.section_data?.section_b?.kesimpulan || '-'}</span>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* C10 - TAB 2: Worksheets Placeholder */}
-                            {activeDetailTab === 1 && viewDetailForm.form_type === 'C10' && (
-                                <div className="space-y-6 animate-fade-in-up">
-                                    <div className="bg-white p-6 rounded-2xl border border-neutral-200 shadow-sm text-center py-12">
-                                        <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-100">
-                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-                                            </svg>
-                                        </div>
-                                        <h4 className="text-base font-bold text-neutral-800">Kertas Kerja C10 Worksheets</h4>
-                                        <p className="text-xs text-neutral-500 mt-2 max-w-md mx-auto">
-                                            Dokumen ini sedang dalam tahap persiapan kerja. Anda dapat menyunting dan mereview laporan ini sesuai alur persetujuan.
-                                        </p>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* D10 - TAB 2: kalkulator */}
-                            {activeDetailTab === 1 && viewDetailForm.form_type === 'D10' && (
-                                <div className="space-y-6 animate-fade-in-up">
-                                    <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm space-y-4">
-                                        <h4 className="text-sm font-extrabold text-neutral-800 border-b pb-2">A. Perhitungan Materialitas Keseluruhan (Overall Materiality)</h4>
-                                        <div className="grid grid-cols-2 gap-4 text-xs">
-                                            <div>
-                                                <span className="text-neutral-400 block uppercase font-bold text-[9px]">KONDISI KEUANGAN KLIEN</span>
-                                                <span className="text-neutral-700 font-bold text-xs uppercase">{viewDetailForm.section_data?.jenis_kondisi || '-'}</span>
-                                            </div>
-                                            <div>
-                                                <span className="text-neutral-400 block uppercase font-bold text-[9px]">BENCHMARK PILIHAN</span>
-                                                <span className="text-[#0071e3] font-extrabold text-xs uppercase">{viewDetailForm.section_data?.benchmark?.replace('_', ' ') || '-'}</span>
-                                            </div>
-                                        </div>
-
-                                        <div className="overflow-x-auto pt-2">
-                                            <table className="w-full text-left text-xs border-collapse">
-                                                <thead>
-                                                    <tr className="border-b border-neutral-200 text-neutral-400 font-bold uppercase tracking-wider text-[9px]">
-                                                        <th className="py-2 px-3">FAKTOR BENCHMARK</th>
-                                                        <th className="py-2 px-3 w-40 text-right">NOMINAL (RP)</th>
-                                                        <th className="py-2 px-3 w-20 text-right">%</th>
-                                                        <th className="py-2 px-3 w-40 text-right">HASIL</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y divide-neutral-100">
-                                                    {viewDetailForm.section_data?.benchmarks && Object.entries(viewDetailForm.section_data.benchmarks).map(([key, value]) => {
-                                                        const isSelected = viewDetailForm.section_data.benchmark === key;
-                                                        return (
-                                                            <tr key={key} className={`hover:bg-neutral-50/50 ${isSelected ? 'bg-blue-50/30' : ''}`}>
-                                                                <td className="py-2 px-3 font-semibold text-neutral-700 capitalize">{key.replace('_', ' ')}</td>
-                                                                <td className="py-2 px-3 text-right text-neutral-600">{formatCurrency(value.nominal)}</td>
-                                                                <td className="py-2 px-3 text-right text-neutral-600">{value.persen}%</td>
-                                                                <td className="py-2 px-3 text-right font-bold text-neutral-800">{formatCurrency(value.hasil)}</td>
-                                                            </tr>
-                                                        );
-                                                    })}
-                                                </tbody>
-                                            </table>
-                                        </div>
-
-                                        <div className="bg-neutral-50 p-4 rounded-xl border border-neutral-200 flex justify-between items-center text-xs">
-                                            <span className="text-neutral-500 font-extrabold uppercase">Pembulatan Materialitas Keseluruhan (Overall Materiality)</span>
-                                            <span className="text-base font-extrabold text-neutral-900">{formatCurrency(viewDetailForm.section_data?.overall_materiality)}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* D10 - TAB 3: limits */}
-                            {activeDetailTab === 2 && viewDetailForm.form_type === 'D10' && (
-                                <div className="space-y-6 animate-fade-in-up">
-                                    <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm space-y-4">
-                                        <h4 className="text-sm font-extrabold text-neutral-800 border-b pb-2">B. Materialitas Pelaksanaan & Pertimbangan Kualitatif</h4>
-
-                                        <div className="space-y-2 text-xs">
-                                            {viewDetailForm.section_data?.qualitative_questions?.map((item) => (
-                                                <div key={item.no} className="p-3 bg-neutral-50/50 border border-neutral-200/60 rounded-xl flex justify-between items-center text-xs gap-3">
-                                                    <div>
-                                                        <span className="text-neutral-400 font-bold block text-[9px]">RISK FACTOR {item.no}</span>
-                                                        <p className="text-neutral-700 font-semibold leading-relaxed">{item.description}</p>
-                                                    </div>
-                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold border uppercase shrink-0 ${item.value === 'Ya' ? 'bg-red-50 border-red-200 text-red-600' : 'bg-green-50 border-green-200 text-green-600'}`}>{item.value}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-
-                                        <div className="grid grid-cols-2 gap-4 border-t border-neutral-100 pt-4 text-xs">
-                                            <div className="bg-neutral-50 p-3 rounded-xl border border-neutral-200 flex justify-between items-center">
-                                                <span className="text-neutral-500 font-bold uppercase text-[10px]">PERSENTASE PELAKSANAAN</span>
-                                                <span className="text-neutral-800 font-extrabold text-xs">{viewDetailForm.section_data?.performance_percent}%</span>
-                                            </div>
-                                            <div className="bg-blue-50/50 p-3 rounded-xl border border-blue-100 flex justify-between items-center">
-                                                <span className="text-blue-700 font-bold uppercase text-[10px]">NOMINAL PELAKSANAAN</span>
-                                                <span className="text-blue-800 font-extrabold text-sm">{formatCurrency(viewDetailForm.section_data?.performance_materiality)}</span>
-                                            </div>
-                                        </div>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-900/40 backdrop-blur-sm p-4 overflow-y-auto">
+                    <div className="w-full max-w-7xl max-h-[95vh] overflow-y-auto bg-white p-6 rounded-2xl border border-neutral-200 shadow-2xl relative">
+                        <button
+                            onClick={() => setViewDetailForm(null)}
+                            className="absolute top-4 right-4 z-50 p-2 rounded-full bg-neutral-100 hover:bg-neutral-200 text-neutral-500 hover:text-neutral-700 shadow-md border border-neutral-200 transition active:scale-95"
+                            title="Tutup Pratinjau"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                        <div className="mt-4">
+                            {viewDetailForm.form_type === 'D10' ? (
+                                <AuditFormD10Wizard
+                                    formToEdit={viewDetailForm}
+                                    clientId={viewDetailForm.client_id}
+                                    clientName={viewDetailForm.client_name || activeClient?.name}
+                                    bookYear={viewDetailForm.book_year || activeClient?.book_year}
+                                    schedule={viewDetailForm.schedule || activeClient?.schedule}
+                                    readOnly={true}
+                                    onClose={() => setViewDetailForm(null)}
+                                    onSaveSuccess={() => {}}
+                                />
+                            ) : viewDetailForm.form_type === 'A10' ? (
+                                <AuditFormWizard
+                                    formToEdit={viewDetailForm}
+                                    clientId={viewDetailForm.client_id}
+                                    clientName={viewDetailForm.client_name || activeClient?.name}
+                                    bookYear={viewDetailForm.book_year || activeClient?.book_year}
+                                    schedule={viewDetailForm.schedule || activeClient?.schedule}
+                                    materiality={{
+                                        overall_materiality: activeClient?.forms?.find(f => f.form_type === 'D10')?.section_data?.overall_materiality ?? null,
+                                        performance_materiality: activeClient?.forms?.find(f => f.form_type === 'D10')?.section_data?.performance_materiality ?? null,
+                                        tolerable_error: activeClient?.forms?.find(f => f.form_type === 'D10')?.section_data?.tolerable_error ?? null,
+                                    }}
+                                    readOnly={true}
+                                    onClose={() => setViewDetailForm(null)}
+                                    onSaveSuccess={() => {}}
+                                />
+                            ) : (
+                                /* C10 Tabbed Layout Preview */
+                                <div className="flex flex-col h-[75vh]">
+                                    {/* Custom Segmented Control (Tabs Navigation) */}
+                                    <div className="flex bg-neutral-100 p-1 rounded-xl mb-6 overflow-x-auto whitespace-nowrap scrollbar-none gap-1 shrink-0">
+                                        {['Ringkasan Penugasan', 'Kertas Kerja (Worksheets)'].map((tab, idx) => (
+                                            <button
+                                                key={tab}
+                                                type="button"
+                                                onClick={() => setActiveDetailTab(idx)}
+                                                className={`flex-1 py-2 px-4 text-xs font-bold rounded-lg transition-all duration-200 ${activeDetailTab === idx
+                                                    ? 'bg-white text-[#0071e3] shadow-sm'
+                                                    : 'text-neutral-500 hover:text-neutral-800'
+                                                    }`}
+                                            >
+                                                {tab}
+                                            </button>
+                                        ))}
                                     </div>
 
-                                    <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm space-y-4">
-                                        <h4 className="text-sm font-extrabold text-neutral-800 border-b pb-2">C. Batas Salah Saji Yang Tidak Dikoreksi (Clearly Trivial)</h4>
-                                        <div className="grid grid-cols-2 gap-4 text-xs">
-                                            <div className="bg-neutral-50 p-3 rounded-xl border border-neutral-200 flex justify-between items-center">
-                                                <span className="text-neutral-500 font-bold uppercase text-[10px]">PERSENTASE AMBANG KESALAHAN</span>
-                                                <span className="text-neutral-800 font-extrabold text-xs">{viewDetailForm.section_data?.tolerable_percent}%</span>
-                                            </div>
-                                            <div className="bg-emerald-50/50 p-3 rounded-xl border border-emerald-100 flex justify-between items-center">
-                                                <span className="text-emerald-700 font-bold uppercase text-[10px]">NOMINAL TOLERABLE ERROR</span>
-                                                <span className="text-emerald-800 font-extrabold text-sm">{formatCurrency(viewDetailForm.section_data?.tolerable_error)}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* D10 - TAB 4: accounts */}
-                            {activeDetailTab === 3 && viewDetailForm.form_type === 'D10' && (
-                                <div className="space-y-6 animate-fade-in-up">
-                                    <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm space-y-4">
-                                        <h4 className="text-sm font-extrabold text-neutral-800 border-b pb-2">D. Materialitas Pelaksanaan Pada Tingkat Saldo Akun</h4>
-                                        <div className="overflow-x-auto">
-                                            <table className="w-full text-left text-xs border-collapse">
-                                                <thead>
-                                                    <tr className="border-b border-neutral-200 text-neutral-400 font-bold uppercase tracking-wider text-[9px]">
-                                                        <th className="py-2 px-3">NAMA AKUN</th>
-                                                        <th className="py-2 px-3 text-right">NILAI INHOUSE (RP)</th>
-                                                        <th className="py-2 px-3 text-center">PERSENTASE</th>
-                                                        <th className="py-2 px-3 text-right">NOMINAL MATERIALITAS</th>
-                                                        <th className="py-2 px-3 text-center">MATERIL / TIDAK</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y divide-neutral-100">
-                                                    {viewDetailForm.section_data?.accounts?.map((acc, index) => {
-                                                        const isMaterial = acc.status === 'Material';
-                                                        return (
-                                                            <tr key={index} className="hover:bg-neutral-50/20">
-                                                                <td className="py-2.5 px-3 font-semibold text-neutral-700">{acc.nama}</td>
-                                                                <td className="py-2.5 px-3 text-right text-neutral-600">{formatCurrency(acc.inhouse)}</td>
-                                                                <td className="py-2.5 px-3 text-center font-bold">{acc.persen}%</td>
-                                                                <td className="py-2.5 px-3 text-right font-bold text-neutral-700">{formatCurrency(acc.nominal)}</td>
-                                                                <td className="py-2.5 px-3 text-center">
-                                                                    <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-extrabold border uppercase ${isMaterial ? 'bg-red-50 text-red-600 border-red-200' : 'bg-neutral-50 text-neutral-500 border-neutral-200'}`}>{acc.status || 'Tidak'}</span>
-                                                                </td>
-                                                            </tr>
-                                                        );
-                                                    })}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* A10 TABS PREVIEW (Compatibility) */}
-                            {activeDetailTab === 1 && (!viewDetailForm.form_type || viewDetailForm.form_type === 'A10') && (
-                                <div className="space-y-4 animate-fade-in-up">
-                                    <h4 className="text-sm font-bold text-[#0071e3] border-b pb-2">I. Ketentuan Perikatan (SA 210)</h4>
-                                    <div className="grid grid-cols-1 gap-2 text-xs">
-                                        {viewDetailForm.section_data?.section_1?.map((item) => {
-                                            const hasData = item.date && item.initial;
-                                            return (
-                                                <div key={item.no} className="bg-white p-3 rounded-xl border border-neutral-200/80 flex items-start gap-4 shadow-xs">
-                                                    <div className={`w-5 h-5 rounded-full shrink-0 flex items-center justify-center text-xs font-bold ${hasData ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-neutral-100 text-neutral-400'}`}>
-                                                        {hasData ? '✓' : item.no}
-                                                    </div>
-                                                    <div className="flex-1">
-                                                        <p className="text-xs text-neutral-700 font-semibold">{item.description}</p>
-                                                        {hasData && (
-                                                            <div className="flex gap-2 mt-1.5 text-[10px] text-neutral-500">
-                                                                <span>Tanggal: {item.date}</span>
-                                                                <span>Inisial: {item.initial}</span>
+                                    {/* Tabs Content - Scrollable area */}
+                                    <div className="flex-1 overflow-y-auto pr-1 text-sm space-y-6">
+                                        {/* Tab 1: Ringkasan Penugasan */}
+                                        {activeDetailTab === 0 && (
+                                            <div className="space-y-6 animate-fade-in-up">
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                    <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm space-y-4">
+                                                        <h4 className="text-xs font-extrabold uppercase tracking-wider text-neutral-400">Informasi Klien</h4>
+                                                        <div className="space-y-3">
+                                                            <div>
+                                                                <span className="text-[10px] text-neutral-400 font-bold block">NAMA KLIEN</span>
+                                                                <span className="text-neutral-900 font-extrabold text-base">{activeClient?.name}</span>
                                                             </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                            )}
-
-                            {activeDetailTab === 2 && (!viewDetailForm.form_type || viewDetailForm.form_type === 'A10') && (
-                                <div className="space-y-6 animate-fade-in-up">
-                                    <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm space-y-4">
-                                        <h4 className="text-xs font-extrabold uppercase tracking-wider text-neutral-400">Deskripsi Klien</h4>
-                                        <p className="text-neutral-700 leading-relaxed font-semibold text-xs">{viewDetailForm.section_data?.section_2_a?.description || '-'}</p>
-                                    </div>
-
-                                    <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm space-y-4">
-                                        <h4 className="text-xs font-extrabold uppercase tracking-wider text-neutral-400">Indikator Going Concern (Kelangsungan Usaha)</h4>
-                                        <div className="space-y-3 text-xs">
-                                            {viewDetailForm.section_data?.section_2_e?.going_concern?.map((item) => (
-                                                <div key={item.no} className="p-3 bg-neutral-50/50 border border-neutral-200/60 rounded-xl flex justify-between items-center gap-3">
-                                                    <div className="flex-1 pr-2">
-                                                        <p className="text-neutral-700 font-bold">{item.no} {item.description}</p>
-                                                        {item.notes && <p className="text-neutral-400 text-[10px] mt-0.5">Catatan: {item.notes}</p>}
-                                                    </div>
-                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold border uppercase shrink-0 ${item.value === 'Ya' ? 'bg-red-50 border-red-200 text-red-600' : 'bg-green-50 border-green-200 text-green-600'}`}>{item.value}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {activeDetailTab === 3 && (!viewDetailForm.form_type || viewDetailForm.form_type === 'A10') && (
-                                <div className="space-y-6 animate-fade-in-up">
-                                    <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm space-y-4">
-                                        <h4 className="text-xs font-extrabold uppercase tracking-wider text-neutral-400">Akuntansi & SOP</h4>
-                                        <div className="grid grid-cols-2 gap-4 text-xs">
-                                            <div>
-                                                <span className="text-neutral-400 font-bold block uppercase text-[10px]">BUKU PEDOMAN</span>
-                                                <p className="text-neutral-800 font-bold mt-1">{viewDetailForm.section_data?.section_2_f?.buku_pedoman || '-'}</p>
-                                            </div>
-                                            <div>
-                                                <span className="text-neutral-400 font-bold block uppercase text-[10px]">CARA MENGOLAH</span>
-                                                <p className="text-neutral-800 font-bold mt-1">{viewDetailForm.section_data?.section_2_f?.cara_mengolah_data || '-'}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {viewDetailForm.section_data?.section_5?.bantuan_klien && (
-                                        <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm space-y-3">
-                                            <h4 className="text-xs font-extrabold uppercase tracking-wider text-neutral-400">Daftar Dokumen Bantuan Klien</h4>
-                                            <div className="grid grid-cols-1 gap-2 max-h-80 overflow-y-auto p-1 bg-neutral-50 rounded-xl border border-neutral-150">
-                                                {viewDetailForm.section_data.section_5.bantuan_klien.map((doc, idx) => (
-                                                    <div key={idx} className="bg-white p-3 rounded-lg border border-neutral-100/80 flex justify-between items-center gap-4 text-xs hover:border-blue-100 transition">
-                                                        <div className="flex-1">
-                                                            <span className="text-neutral-700 font-semibold block">{doc.no}. {doc.description}</span>
+                                                            <div className="grid grid-cols-2 gap-4">
+                                                                <div>
+                                                                    <span className="text-[10px] text-neutral-400 font-bold block">TAHUN BUKU</span>
+                                                                    <span className="text-neutral-800 font-bold text-sm">{activeClient?.book_year}</span>
+                                                                </div>
+                                                                <div>
+                                                                    <span className="text-[10px] text-neutral-400 font-bold block">SKEDUL / JASA</span>
+                                                                    <span className="text-neutral-800 font-bold text-sm">{activeClient?.schedule || '-'}</span>
+                                                                </div>
+                                                            </div>
                                                         </div>
-                                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold border uppercase shrink-0 ${doc.value === 'Ya' ? 'bg-green-50 border-green-200 text-green-700' : 'bg-neutral-50 border-neutral-200 text-neutral-600'}`}>{doc.value === 'Ya' ? 'Ada' : 'Tidak'}</span>
                                                     </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
 
-                            {activeDetailTab === 4 && (!viewDetailForm.form_type || viewDetailForm.form_type === 'A10') && (
-                                <div className="space-y-6 animate-fade-in-up">
-                                    <div className="bg-gradient-to-br from-blue-50/50 to-neutral-50 p-5 rounded-2xl border border-blue-100 shadow-sm space-y-4">
-                                        <h4 className="text-xs font-extrabold uppercase tracking-wider text-blue-700">Ringkasan Keputusan</h4>
-                                        <div className="grid grid-cols-2 gap-4 border-t border-blue-100 pt-3">
-                                            <div className="bg-red-50 border border-red-200 p-3 rounded-xl text-center">
-                                                <span className="text-[9px] text-red-500 font-bold block uppercase tracking-wider">Level Risiko Penugasan</span>
-                                                <span className="text-red-700 font-extrabold text-sm block mt-0.5">{viewDetailForm.section_data?.section_b?.level_risiko || '-'}</span>
+                                                    <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm space-y-4">
+                                                        <h4 className="text-xs font-extrabold uppercase tracking-wider text-neutral-400">Tim Audit & Kesimpulan Laporan</h4>
+                                                        <div className="space-y-3">
+                                                            <div className="grid grid-cols-3 gap-2 text-xs">
+                                                                <div className="bg-neutral-50 p-2 rounded-xl border border-neutral-100/80">
+                                                                    <span className="text-[9px] text-neutral-400 block uppercase font-bold text-center">PREPARER</span>
+                                                                    <span className="text-neutral-800 font-bold block text-center truncate mt-0.5">{viewDetailForm.preparer?.name || '-'}</span>
+                                                                </div>
+                                                                <div className="bg-neutral-50 p-2 rounded-xl border border-neutral-100/80">
+                                                                    <span className="text-[9px] text-neutral-400 block uppercase font-bold text-center">REVIEWER</span>
+                                                                    <span className="text-neutral-800 font-bold block text-center truncate mt-0.5">{viewDetailForm.reviewer?.name || '-'}</span>
+                                                                </div>
+                                                                <div className="bg-neutral-50 p-2 rounded-xl border border-neutral-100/80">
+                                                                    <span className="text-[9px] text-neutral-400 block uppercase font-bold text-center">APPROVER</span>
+                                                                    <span className="text-neutral-800 font-bold block text-center truncate mt-0.5">{viewDetailForm.approver?.name || '-'}</span>
+                                                                </div>
+                                                            </div>
+                                                            <div className="bg-emerald-50/50 p-2.5 rounded-xl border border-emerald-100 text-center">
+                                                                <span className="text-[9px] text-emerald-600 block font-bold uppercase tracking-wider">STATUS KERTAS KERJA</span>
+                                                                <span className="text-emerald-700 font-extrabold text-sm mt-0.5 block">Dalam Persiapan</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div className="bg-green-50 border border-green-200 p-3 rounded-xl text-center">
-                                                <span className="text-[9px] text-green-500 font-bold block uppercase tracking-wider">Keputusan Akhir</span>
-                                                <span className="text-green-700 font-extrabold text-sm block mt-0.5">{viewDetailForm.section_data?.section_b?.kesimpulan || '-'}</span>
+                                        )}
+
+                                        {/* Tab 2: Worksheets Placeholder */}
+                                        {activeDetailTab === 1 && (
+                                            <div className="space-y-6 animate-fade-in-up">
+                                                <div className="bg-white p-6 rounded-2xl border border-neutral-200 shadow-sm text-center py-12">
+                                                    <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-100">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                                                        </svg>
+                                                    </div>
+                                                    <h4 className="text-base font-bold text-neutral-800">Kertas Kerja C10 Worksheets</h4>
+                                                    <p className="text-xs text-neutral-500 mt-2 max-w-md mx-auto">
+                                                        Dokumen ini sedang dalam tahap persiapan kerja. Anda dapat menyunting dan mereview laporan ini sesuai alur persetujuan.
+                                                    </p>
+                                                </div>
                                             </div>
-                                        </div>
+                                        )}
+                                    </div>
+
+                                    {/* Modal Footer */}
+                                    <div className="flex justify-end gap-3 pt-4 border-t border-neutral-200 mt-4 shrink-0">
+                                        <button
+                                            onClick={() => setViewDetailForm(null)}
+                                            className="px-5 py-2.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-xl text-xs font-bold transition duration-200"
+                                        >
+                                            Tutup Pratinjau
+                                        </button>
                                     </div>
                                 </div>
                             )}
-
-                        </div>
-
-                        {/* Modal Footer */}
-                        <div className="flex justify-end gap-3 pt-4 border-t border-neutral-200 mt-4 shrink-0">
-                            <button
-                                onClick={() => setViewDetailForm(null)}
-                                className="px-5 py-2.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-xl text-xs font-bold transition duration-200"
-                            >
-                                Tutup Pratinjau
-                            </button>
                         </div>
                     </div>
                 </div>
