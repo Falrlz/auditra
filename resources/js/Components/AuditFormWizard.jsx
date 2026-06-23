@@ -853,7 +853,7 @@ export default function AuditFormWizard({ formToEdit, clientId, clientName, book
                                                                 if (newTotalShares > 0 && !isNaN(val)) {
                                                                     item.saham_persen = ((val / newTotalShares) * 100).toFixed(2) + '%';
                                                                 } else {
-                                                                    item.saham_persen = '#DIV/0!';
+                                                                    item.saham_persen = '-';
                                                                 }
                                                             });
 
@@ -866,7 +866,7 @@ export default function AuditFormWizard({ formToEdit, clientId, clientName, book
                                                 <td className="py-1 px-2 border border-neutral-300">
                                                     <input
                                                         type="text"
-                                                        value={owner.saham_persen || '#DIV/0!'}
+                                                        value={owner.saham_persen || '-'}
                                                         readOnly
                                                         className="w-full border border-transparent p-1.5 text-xs text-center font-semibold bg-transparent text-neutral-500 cursor-not-allowed rounded"
                                                         placeholder="Persentase"
@@ -911,7 +911,7 @@ export default function AuditFormWizard({ formToEdit, clientId, clientName, book
                                                 {calculateTotalShares().toLocaleString('id-ID')}
                                             </td>
                                             <td className="py-2 px-3 border border-neutral-300 text-center text-neutral-800">
-                                                {calculateTotalShares() > 0 ? '100.00%' : '#DIV/0!'}
+                                                {calculateTotalShares() > 0 ? '100.00%' : '-'}
                                             </td>
                                             <td colSpan="2" className="py-2 px-3 border border-neutral-300"></td>
                                         </tr>
