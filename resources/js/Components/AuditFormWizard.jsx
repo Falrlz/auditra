@@ -210,7 +210,7 @@ export default function AuditFormWizard({ formToEdit, clientId, clientName, book
                 related_parties: defaultRelatedParties,
                 ...(formToEdit.section_data.section_2_b || {})
             },
-            section_2_c: formToEdit.section_data.section_2_c || 'Jasa Audit Laporan keuangan tahun buku 2024',
+            section_2_c: formToEdit.section_data.section_2_c || '',
             section_2_d: {
                 nama_kap: '',
                 nama_ap: '',
@@ -295,7 +295,7 @@ export default function AuditFormWizard({ formToEdit, clientId, clientName, book
                 subsidiary_detail: defaultSubsidiaryDetail,
                 related_parties: defaultRelatedParties,
             },
-            section_2_c: 'Jasa Audit Laporan keuangan tahun buku 2024',
+            section_2_c: '',
             section_2_d: {
                 nama_kap: '',
                 nama_ap: '',

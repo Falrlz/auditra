@@ -98,9 +98,9 @@ export default function Dashboard({ auth, clients, allUsers }) {
         }
     };
 
-    const handleSubmitToReview = (formId) => {
+    const handleSubmitToReview = (formId, formType) => {
         if (confirm('Kirim formulir ini ke Ketua Tim untuk direview?')) {
-            router.post(route('audit-forms.submit', formId), {}, {
+            router.post(route('audit-forms.submit', formId), { form_type: formType }, {
                 onSuccess: () => router.reload()
             });
         }
@@ -119,7 +119,8 @@ export default function Dashboard({ auth, clients, allUsers }) {
 
         router.post(route('audit-forms.review', reviewForm.id), {
             action: reviewAction,
-            reject_reason: rejectReason
+            reject_reason: rejectReason,
+            form_type: reviewForm.form_type
         }, {
             onSuccess: () => {
                 setShowReviewModal(false);
@@ -481,7 +482,7 @@ export default function Dashboard({ auth, clients, allUsers }) {
                                                                         </button>
                                                                         {formA10 && (
                                                                             <button
-                                                                                onClick={() => handleSubmitToReview(formA10.id)}
+                                                                                onClick={() => handleSubmitToReview(formA10.id, 'A10')}
                                                                                 className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-bold transition duration-200"
                                                                             >
                                                                                 Kirim Review
@@ -562,7 +563,7 @@ export default function Dashboard({ auth, clients, allUsers }) {
                                                                         </button>
                                                                         {formC10 && (
                                                                             <button
-                                                                                onClick={() => handleSubmitToReview(formC10.id)}
+                                                                                onClick={() => handleSubmitToReview(formC10.id, 'C10')}
                                                                                 className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-bold transition duration-200"
                                                                             >
                                                                                 Kirim Review
@@ -643,7 +644,7 @@ export default function Dashboard({ auth, clients, allUsers }) {
                                                                         </button>
                                                                         {formD10 && (
                                                                             <button
-                                                                                onClick={() => handleSubmitToReview(formD10.id)}
+                                                                                onClick={() => handleSubmitToReview(formD10.id, 'D10')}
                                                                                 className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-bold transition duration-200"
                                                                             >
                                                                                 Kirim Review

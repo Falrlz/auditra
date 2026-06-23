@@ -478,13 +478,22 @@ class AuditFormController extends Controller
     {
         $user = Auth::user();
 
-        // Check A10 first
-        $form = A10::find($id);
-        $type = 'A10';
-
-        if (!$form) {
+        // Check A10 first or C10/D10 based on form_type query
+        $formType = $request->query('form_type');
+        if ($formType === 'A10') {
+            $form = A10::find($id);
+            $type = 'A10';
+        } elseif ($formType === 'C10' || $formType === 'D10') {
             $form = C10D10::find($id);
-            $type = $request->query('form_type', 'C10');
+            $type = $formType;
+        } else {
+            // Fallback
+            $form = A10::find($id);
+            $type = 'A10';
+            if (!$form) {
+                $form = C10D10::find($id);
+                $type = 'C10';
+            }
         }
 
         if (!$form) {
@@ -978,13 +987,18 @@ class AuditFormController extends Controller
     /**
      * Submit form for review.
      */
-    public function submit($id)
+    public function submit(Request $request, $id)
     {
         $user = Auth::user();
 
-        $form = A10::find($id);
-        if (!$form) {
+        $formType = $request->input('form_type');
+        if ($formType === 'A10') {
+            $form = A10::find($id);
+        } elseif ($formType === 'C10' || $formType === 'D10') {
             $form = C10D10::find($id);
+        } else {
+            // Fallback
+            $form = A10::find($id) ?: C10D10::find($id);
         }
 
         if (!$form) {
@@ -1022,9 +1036,14 @@ class AuditFormController extends Controller
     {
         $user = Auth::user();
 
-        $form = A10::find($id);
-        if (!$form) {
+        $formType = $request->input('form_type');
+        if ($formType === 'A10') {
+            $form = A10::find($id);
+        } elseif ($formType === 'C10' || $formType === 'D10') {
             $form = C10D10::find($id);
+        } else {
+            // Fallback
+            $form = A10::find($id) ?: C10D10::find($id);
         }
 
         if (!$form) {
