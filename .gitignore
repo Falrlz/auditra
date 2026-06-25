@@ -28,4 +28,5 @@ composer.phar
 composer-setup.php
 composer.bat
 .env.decrypted
+/project_docs
 

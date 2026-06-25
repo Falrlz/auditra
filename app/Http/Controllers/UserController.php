@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\Pegawai;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
@@ -22,12 +23,19 @@ class UserController extends Controller
             'inisial' => 'required|string|max:10',
         ]);
 
-        User::create([
+        // Create pegawai record
+        $pegawai = Pegawai::create([
             'name' => $request->name,
+            'jabatan' => $request->role,
+            'inisial' => strtoupper($request->inisial),
+            'status' => 'aktif',
+        ]);
+
+        // Create user record
+        User::create([
+            'pegawai_id' => $pegawai->id,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'role' => $request->role,
-            'inisial' => strtoupper($request->inisial),
         ]);
 
         return redirect()->back()->with('success', 'User registered successfully.');
@@ -38,26 +46,36 @@ class UserController extends Controller
      */
     public function update(Request $request, User $user)
     {
+        // For unique validation of inisial, we check the pegawai associated with this user
+        $pegawaiId = $user->pegawai_id;
+
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
             'password' => ['nullable', 'string', 'min:8'],
             'role' => 'required|string|in:admin,partner,manager,staff',
-            'inisial' => 'required|string|max:10|unique:users,inisial,' . $user->id,
+            'inisial' => 'required|string|max:10|unique:pegawai,inisial,' . $pegawaiId,
         ]);
 
-        $data = [
-            'name' => $request->name,
+        // Update pegawai record
+        if ($user->pegawai) {
+            $user->pegawai->update([
+                'name' => $request->name,
+                'jabatan' => $request->role,
+                'inisial' => strtoupper($request->inisial),
+            ]);
+        }
+
+        // Update user record
+        $userData = [
             'email' => $request->email,
-            'role' => $request->role,
-            'inisial' => strtoupper($request->inisial),
         ];
 
         if ($request->filled('password')) {
-            $data['password'] = Hash::make($request->password);
+            $userData['password'] = Hash::make($request->password);
         }
 
-        $user->update($data);
+        $user->update($userData);
 
         return redirect()->back()->with('success', 'User berhasil diperbarui.');
     }
@@ -71,7 +89,12 @@ class UserController extends Controller
             return redirect()->back()->with('error', 'Anda tidak dapat menghapus akun Anda sendiri.');
         }
 
+        // Soft delete both user and associated pegawai
+        $pegawai = $user->pegawai;
         $user->delete();
+        if ($pegawai) {
+            $pegawai->delete();
+        }
 
         return redirect()->back()->with('success', 'User berhasil dihapus.');
     }

@@ -15,82 +15,57 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // 1. Seed users
-        $admin = User::updateOrCreate(
-            ['email' => 'linda@example.com'],
-            [
-                'name' => 'Linda Admin',
-                'password' => Hash::make('password'),
-                'role' => 'admin',
-                'inisial' => 'LIN',
-            ]
-        );
+        // Helper to updateOrCreate Pegawai & User
+        $seedUser = function ($name, $email, $role, $inisial) {
+            $pegawai = \App\Models\Pegawai::updateOrCreate(
+                ['inisial' => $inisial],
+                [
+                    'name' => $name,
+                    'jabatan' => $role,
+                    'status' => 'aktif',
+                ]
+            );
+            return User::updateOrCreate(
+                ['pegawai_id' => $pegawai->id],
+                [
+                    'email' => $email,
+                    'password' => Hash::make('password'),
+                ]
+            );
+        };
 
-        $partner = User::updateOrCreate(
-            ['email' => 'sandra@example.com'],
-            [
-                'name' => 'Sandra Partner',
-                'password' => Hash::make('password'),
-                'role' => 'partner',
-                'inisial' => 'SAN',
-            ]
-        );
-
-        $manager = User::updateOrCreate(
-            ['email' => 'joko@example.com'],
-            [
-                'name' => 'Joko Manager',
-                'password' => Hash::make('password'),
-                'role' => 'manager',
-                'inisial' => 'JOK',
-            ]
-        );
-
-        $andi = User::updateOrCreate(
-            ['email' => 'andi@example.com'],
-            [
-                'name' => 'Andi Staff',
-                'password' => Hash::make('password'),
-                'role' => 'staff',
-                'inisial' => 'AND',
-            ]
-        );
-
-        $saipul = User::updateOrCreate(
-            ['email' => 'saipul@example.com'],
-            [
-                'name' => 'Saipul Staff',
-                'password' => Hash::make('password'),
-                'role' => 'staff',
-                'inisial' => 'SAI',
-            ]
-        );
+        // 1. Seed users & pegawai
+        $admin = $seedUser('Linda Admin', 'linda@example.com', 'admin', 'LIN');
+        $partner = $seedUser('Sandra Partner', 'sandra@example.com', 'partner', 'SAN');
+        $manager = $seedUser('Joko Manager', 'joko@example.com', 'manager', 'JOK');
+        $andi = $seedUser('Andi Staff', 'andi@example.com', 'staff', 'AND');
+        $saipul = $seedUser('Saipul Staff', 'saipul@example.com', 'staff', 'SAI');
 
         // 2. Seed Client
         $client = \App\Models\Client::updateOrCreate(
-            ['nama' => 'PT EASTPARC HOTEL TBK'],
+            ['name' => 'PT EASTPARC HOTEL TBK'],
             [
-                'tahun_buku' => '31 Desember 2024',
-                'jadwal' => 'Pre-Engagement (Analisi Penerimaan Dan Keberlanjutan Hubungan Dengan Klien)',
+                'book_year' => '31 Desember 2024',
+                'schedule' => 'Pre-Engagement (Analisi Penerimaan Dan Keberlanjutan Hubungan Dengan Klien)',
             ]
         );
 
         // 3. Seed Tim Perikatan
-        \App\Models\EngagementTeam::updateOrCreate(
-            ['klien_id' => $client->id, 'user_id' => $andi->id],
-            ['peran' => 'anggota']
+        \App\Models\TimPerikatan::updateOrCreate(
+            ['client_id' => $client->id, 'pegawai_id' => $andi->pegawai_id],
+            ['role' => 'anggota']
         );
-        \App\Models\EngagementTeam::updateOrCreate(
-            ['klien_id' => $client->id, 'user_id' => $saipul->id],
-            ['peran' => 'ketua_tim']
+        \App\Models\TimPerikatan::updateOrCreate(
+            ['client_id' => $client->id, 'pegawai_id' => $saipul->pegawai_id],
+            ['role' => 'ketua_tim']
         );
-        \App\Models\EngagementTeam::updateOrCreate(
-            ['klien_id' => $client->id, 'user_id' => $manager->id],
-            ['peran' => 'supervisor']
+        \App\Models\TimPerikatan::updateOrCreate(
+            ['client_id' => $client->id, 'pegawai_id' => $manager->pegawai_id],
+            ['role' => 'supervisor']
         );
-        \App\Models\EngagementTeam::updateOrCreate(
-            ['klien_id' => $client->id, 'user_id' => $partner->id],
-            ['peran' => 'partner']
+        \App\Models\TimPerikatan::updateOrCreate(
+            ['client_id' => $client->id, 'pegawai_id' => $partner->pegawai_id],
+            ['role' => 'partner']
         );
 
         // 4. Parse a10.ods or fallback to a10_db_dump.json
@@ -112,13 +87,16 @@ class DatabaseSeeder extends Seeder
             $this->command->info("Using fallback a10_db_dump.json for A10 seeding.");
         }
 
-        if ($sectionData) {
+        $timAndi = \App\Models\TimPerikatan::where('client_id', $client->id)
+            ->where('pegawai_id', $andi->pegawai_id)
+            ->first();
+
+        if ($sectionData && $timAndi) {
             // 5. Create A10 Draft
             A10::create([
-                'klien_id' => $client->id,
+                'tim_perikatan_id' => $timAndi->id,
                 'status' => 'draft',
                 'form_a10' => $sectionData,
-                'pembuat_id' => $andi->id,
             ]);
 
             $this->command->info("Database seeded successfully with users, client, engagement team, and A10 draft form.");

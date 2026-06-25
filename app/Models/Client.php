@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Client extends Model
@@ -16,36 +16,43 @@ class Client extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'nama',
-        'tahun_buku',
-        'jadwal',
-        'dibuat_oleh',
+        'name',
+        'book_year',
+        'schedule',
+        'created_by',
     ];
 
     public function creator()
     {
-        return $this->belongsTo(User::class, 'dibuat_oleh');
+        return $this->belongsTo(Pegawai::class, 'created_by');
     }
 
-    public function a10()
+    public function a10(): HasOneThrough
     {
-        return $this->hasOne(A10::class, 'klien_id');
+        return $this->hasOneThrough(A10::class, TimPerikatan::class, 'client_id', 'tim_perikatan_id');
     }
 
-    public function c10D10()
+    public function c10D10(): HasOneThrough
     {
-        return $this->hasOne(C10D10::class, 'klien_id');
+        return $this->hasOneThrough(C10D10::class, TimPerikatan::class, 'client_id', 'tim_perikatan_id');
     }
 
     public function timPerikatans(): HasMany
     {
-        return $this->hasMany(EngagementTeam::class, 'klien_id');
+        return $this->hasMany(TimPerikatan::class, 'client_id');
     }
 
     public function users(): BelongsToMany
     {
-        return $this->belongsToMany(User::class, 'tim_perikatans', 'klien_id', 'user_id')
-                    ->withPivot('peran')
+        return $this->belongsToMany(User::class, 'tim_perikatan', 'client_id', 'pegawai_id', 'id', 'pegawai_id')
+                    ->withPivot('role')
+                    ->withTimestamps();
+    }
+
+    public function pegawais(): BelongsToMany
+    {
+        return $this->belongsToMany(Pegawai::class, 'tim_perikatan', 'client_id', 'pegawai_id')
+                    ->withPivot('role')
                     ->withTimestamps();
     }
 }

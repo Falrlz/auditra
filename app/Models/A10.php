@@ -3,19 +3,17 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class A10 extends Model
 {
     protected $table = 'a10';
 
     protected $fillable = [
-        'klien_id',
+        'tim_perikatan_id',
         'status',
-        'alasan_penolakan',
+        'reject_reason',
         'form_a10',
-        'pembuat_id',
-        'penelaah_id',
-        'penyetuju_id',
     ];
 
     protected function casts(): array
@@ -25,23 +23,8 @@ class A10 extends Model
         ];
     }
 
-    public function client()
+    public function timPerikatan(): BelongsTo
     {
-        return $this->belongsTo(Client::class, 'klien_id');
-    }
-
-    public function preparer()
-    {
-        return $this->belongsTo(User::class, 'pembuat_id');
-    }
-
-    public function reviewer()
-    {
-        return $this->belongsTo(User::class, 'penelaah_id');
-    }
-
-    public function approver()
-    {
-        return $this->belongsTo(User::class, 'penyetuju_id');
+        return $this->belongsTo(TimPerikatan::class, 'tim_perikatan_id');
     }
 }

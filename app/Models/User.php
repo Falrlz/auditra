@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class User extends Authenticatable
 {
@@ -20,11 +21,12 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
-        'name',
+        'pegawai_id',
         'email',
         'password',
-        'role',
+        'name',
         'inisial',
+        'role',
     ];
 
     /**
@@ -50,6 +52,60 @@ class User extends Authenticatable
         ];
     }
 
+    public function pegawai(): BelongsTo
+    {
+        return $this->belongsTo(Pegawai::class, 'pegawai_id');
+    }
+
+    // Proxy Accessors & Mutators for backward compatibility
+    public function getNameAttribute()
+    {
+        return $this->pegawai?->name;
+    }
+
+    public function setNameAttribute($value)
+    {
+        $pegawai = $this->pegawai;
+        if ($pegawai) {
+            $pegawai->name = $value;
+            if ($pegawai->exists) {
+                $pegawai->save();
+            }
+        }
+    }
+
+    public function getInisialAttribute()
+    {
+        return $this->pegawai?->inisial;
+    }
+
+    public function setInisialAttribute($value)
+    {
+        $pegawai = $this->pegawai;
+        if ($pegawai) {
+            $pegawai->inisial = $value;
+            if ($pegawai->exists) {
+                $pegawai->save();
+            }
+        }
+    }
+
+    public function getRoleAttribute()
+    {
+        return $this->pegawai?->jabatan;
+    }
+
+    public function setRoleAttribute($value)
+    {
+        $pegawai = $this->pegawai;
+        if ($pegawai) {
+            $pegawai->jabatan = $value;
+            if ($pegawai->exists) {
+                $pegawai->save();
+            }
+        }
+    }
+
     public function isAdmin(): bool
     {
         return $this->role === 'admin';
@@ -72,24 +128,36 @@ class User extends Authenticatable
 
     public function timPerikatans()
     {
-        return $this->hasMany(EngagementTeam::class);
+        return $this->hasManyThrough(
+            TimPerikatan::class,
+            Pegawai::class,
+            'id', // Foreign key on Pegawai table
+            'pegawai_id', // Foreign key on TimPerikatan table
+            'pegawai_id', // Local key on User table
+            'id' // Local key on Pegawai table
+        );
     }
 
     public function clients()
     {
-        return $this->belongsToMany(Client::class, 'tim_perikatans', 'user_id', 'klien_id')
-                    ->withPivot('peran')
+        return $this->belongsToMany(Client::class, 'tim_perikatan', 'pegawai_id', 'client_id', 'pegawai_id', 'id')
+                    ->withPivot('role')
                     ->withTimestamps();
     }
 
     public function createdClients()
     {
-        return $this->hasMany(Client::class, 'dibuat_oleh');
+        return $this->hasMany(Client::class, 'created_by', 'pegawai_id');
     }
 
     public function roleInClient($clientId)
     {
-        $teamMember = $this->timPerikatans()->where('klien_id', $clientId)->first();
-        return $teamMember ? $teamMember->peran : null;
+        if (!$this->pegawai_id) {
+            return null;
+        }
+        $teamMember = TimPerikatan::where('pegawai_id', $this->pegawai_id)
+            ->where('client_id', $clientId)
+            ->first();
+        return $teamMember ? $teamMember->role : null;
     }
 }

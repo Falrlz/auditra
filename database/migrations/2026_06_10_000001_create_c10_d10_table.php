@@ -13,16 +13,13 @@ return new class extends Migration
     {
         Schema::create('c10_d10', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('klien_id')->unique()->constrained('clients')->onDelete('cascade');
-            $table->decimal('materialitas_keseluruhan', 20, 2)->nullable();
-            $table->decimal('materialitas_kinerja', 20, 2)->nullable();
-            $table->decimal('kesalahan_ditoleransi', 20, 2)->nullable();
+            $table->foreignId('tim_perikatan_id')->constrained('tim_perikatan')->onDelete('cascade');
+            $table->decimal('overall_materiality', 20, 2)->nullable();
+            $table->decimal('performance_materiality', 20, 2)->nullable();
+            $table->decimal('tolerable_error', 20, 2)->nullable();
             $table->string('status')->default('draft');
-            $table->text('alasan_penolakan')->nullable();
-            $table->json('data_bagian')->nullable();
-            $table->foreignId('pembuat_id')->constrained('users')->onDelete('cascade');
-            $table->foreignId('penelaah_id')->nullable()->constrained('users')->onDelete('set null');
-            $table->foreignId('penyetuju_id')->nullable()->constrained('users')->onDelete('set null');
+            $table->text('reject_reason')->nullable();
+            $table->json('section_data')->nullable();
             $table->timestamps();
         });
     }

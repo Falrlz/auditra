@@ -3,53 +3,37 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class C10D10 extends Model
 {
     protected $table = 'c10_d10';
 
     protected $fillable = [
-        'klien_id',
-        'materialitas_keseluruhan',
-        'materialitas_kinerja',
-        'kesalahan_ditoleransi',
+        'tim_perikatan_id',
+        'overall_materiality',
+        'performance_materiality',
+        'tolerable_error',
         'status',
-        'alasan_penolakan',
-        'data_bagian',
-        'pembuat_id',
-        'penelaah_id',
-        'penyetuju_id',
+        'reject_reason',
+        'section_data',
     ];
 
     protected function casts(): array
     {
         return [
-            'data_bagian' => 'array',
+            'section_data' => 'array',
         ];
     }
 
-    public function client()
+    public function timPerikatan(): BelongsTo
     {
-        return $this->belongsTo(Client::class, 'klien_id');
+        return $this->belongsTo(TimPerikatan::class, 'tim_perikatan_id');
     }
 
-    public function accounts()
+    public function accounts(): HasMany
     {
         return $this->hasMany(C10D10Account::class, 'c10_d10_id');
-    }
-
-    public function preparer()
-    {
-        return $this->belongsTo(User::class, 'pembuat_id');
-    }
-
-    public function reviewer()
-    {
-        return $this->belongsTo(User::class, 'penelaah_id');
-    }
-
-    public function approver()
-    {
-        return $this->belongsTo(User::class, 'penyetuju_id');
     }
 }
