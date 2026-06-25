@@ -11,12 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('a10', function (Blueprint $table) {
+        Schema::create('presensi', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('tim_perikatan_id')->constrained('tim_perikatan')->onDelete('cascade');
-            $table->string('status')->default('draft');
-            $table->text('reject_reason')->nullable();
-            $table->json('form_a10');
+            $table->foreignId('pegawai_id')->constrained('pegawai')->onDelete('cascade');
+            $table->date('tanggal');
+            $table->datetime('checkin_at')->nullable();
+            $table->datetime('checkout_at')->nullable();
+            $table->string('status'); // hadir, dinas_luar, izin, sakit, alpha
             $table->timestamps();
         });
     }
@@ -26,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('a10');
+        Schema::dropIfExists('presensi');
     }
 };

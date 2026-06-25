@@ -39,7 +39,7 @@ class ProfileUpdateRequest extends FormRequest
                 'required',
                 'string',
                 'max:3',
-                Rule::unique(User::class)->ignore($this->user()->id),
+                Rule::unique('pegawai', 'inisial')->ignore($this->user()->pegawai_id),
             ],
         ];
     }

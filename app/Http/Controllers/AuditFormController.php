@@ -7,7 +7,7 @@ use App\Models\C10D10;
 use App\Models\C10D10Account;
 use App\Models\Client;
 use App\Models\User;
-use App\Models\EngagementTeam;
+use App\Models\TimPerikatan;
 use App\Services\OdsParser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -27,20 +27,21 @@ class AuditFormController extends Controller
         // Admin and Partner can see all clients. Staff & Manager only see their assigned clients.
         if (!$user->isAdmin() && !$user->isPartner()) {
             $clientsQuery->whereHas('users', function ($query) use ($user) {
-                $query->where('user_id', $user->id);
+                $query->where('pegawai_id', $user->pegawai_id);
             });
         }
 
         $clients = $clientsQuery->with([
-            'users',
-            'a10.preparer', 'a10.reviewer', 'a10.approver',
-            'c10D10.preparer', 'c10D10.reviewer', 'c10D10.approver', 'c10D10.accounts'
+            'users.pegawai',
+            'a10.timPerikatan.pegawai',
+            'c10D10.timPerikatan.pegawai',
+            'c10D10.accounts'
         ])->latest()->get();
 
         // Format clients for frontend
         $formattedClients = $clients->map(function ($client) use ($user) {
             $pivot = $client->users->where('id', $user->id)->first();
-            $teamRole = $pivot ? $pivot->pivot->peran : null;
+            $teamRole = $pivot ? $pivot->pivot->role : null;
 
             $forms = [];
 
@@ -48,17 +49,17 @@ class AuditFormController extends Controller
             if ($client->a10) {
                 $forms[] = [
                     'id' => $client->a10->id,
-                    'client_id' => $client->a10->klien_id,
+                    'client_id' => $client->id,
                     'form_type' => 'A10',
                     'status' => $client->a10->status,
-                    'reject_reason' => $client->a10->alasan_penolakan,
+                    'reject_reason' => $client->a10->reject_reason,
                     'section_data' => $client->a10->form_a10,
-                    'preparer_id' => $client->a10->pembuat_id,
-                    'preparer' => $client->a10->preparer,
-                    'reviewer_id' => $client->a10->penelaah_id,
-                    'reviewer' => $client->a10->reviewer,
-                    'approver_id' => $client->a10->penyetuju_id,
-                    'approver' => $client->a10->approver,
+                    'preparer_id' => $client->a10->timPerikatan?->pegawai_id,
+                    'preparer' => $client->a10->timPerikatan?->pegawai,
+                    'reviewer_id' => null,
+                    'reviewer' => null,
+                    'approver_id' => null,
+                    'approver' => null,
                     'created_at' => $client->a10->created_at,
                     'updated_at' => $client->a10->updated_at,
                 ];
@@ -81,18 +82,18 @@ class AuditFormController extends Controller
                     }
                     $groups[$groupId]['children'][] = [
                         'id' => $account->id,
-                        'suffix' => $account->sufiks,
+                        'suffix' => $account->suffix,
                         'kode_lengkap' => $account->kode_lengkap,
                         'nama' => $account->nama,
                         'saldo_unaudited' => (float)$account->saldo_unaudited,
                         'tcm_unaudited' => $account->tcm_unaudited,
                         'penyesuaian_debit' => (float)$account->penyesuaian_debit,
                         'penyesuaian_kredit' => (float)$account->penyesuaian_kredit,
-                        'reff' => $account->referensi,
+                        'reff' => $account->reff,
                         'saldo_audited' => (float)$account->saldo_audited,
                         'tcm_audited' => $account->tcm_audited,
-                        'saldo_audited_prev' => (float)$account->saldo_audited_sebelumnya,
-                        'saldo_audited_prev2' => $account->saldo_audited_sebelumnya2 !== null ? (float)$account->saldo_audited_sebelumnya2 : null,
+                        'saldo_audited_prev' => (float)$account->saldo_audited_prev,
+                        'saldo_audited_prev2' => $account->saldo_audited_prev2 !== null ? (float)$account->saldo_audited_prev2 : null,
                         'persen_materialitas' => (float)$account->persen_materialitas,
                         'status_materialitas' => $account->status_materialitas,
                     ];
@@ -100,20 +101,20 @@ class AuditFormController extends Controller
 
                 $forms[] = [
                     'id' => $client->c10D10->id,
-                    'client_id' => $client->c10D10->klien_id,
+                    'client_id' => $client->id,
                     'form_type' => 'C10',
                     'status' => $client->c10D10->status,
-                    'reject_reason' => $client->c10D10->alasan_penolakan,
+                    'reject_reason' => $client->c10D10->reject_reason,
                     'section_data' => [
-                        'notes' => $client->c10D10->data_bagian['notes'] ?? '',
+                        'notes' => $client->c10D10->section_data['notes'] ?? '',
                         'groups' => array_values($groups),
                     ],
-                    'preparer_id' => $client->c10D10->pembuat_id,
-                    'preparer' => $client->c10D10->preparer,
-                    'reviewer_id' => $client->c10D10->penelaah_id,
-                    'reviewer' => $client->c10D10->reviewer,
-                    'approver_id' => $client->c10D10->penyetuju_id,
-                    'approver' => $client->c10D10->approver,
+                    'preparer_id' => $client->c10D10->timPerikatan?->pegawai_id,
+                    'preparer' => $client->c10D10->timPerikatan?->pegawai,
+                    'reviewer_id' => null,
+                    'reviewer' => null,
+                    'approver_id' => null,
+                    'approver' => null,
                     'created_at' => $client->c10D10->created_at,
                     'updated_at' => $client->c10D10->updated_at,
                 ];
@@ -121,17 +122,17 @@ class AuditFormController extends Controller
                 // D10 Form
                 $forms[] = [
                     'id' => $client->c10D10->id,
-                    'client_id' => $client->c10D10->klien_id,
+                    'client_id' => $client->id,
                     'form_type' => 'D10',
                     'status' => $client->c10D10->status,
-                    'reject_reason' => $client->c10D10->alasan_penolakan,
+                    'reject_reason' => $client->c10D10->reject_reason,
                     'section_data' => $this->getD10SectionData($client->c10D10),
-                    'preparer_id' => $client->c10D10->pembuat_id,
-                    'preparer' => $client->c10D10->preparer,
-                    'reviewer_id' => $client->c10D10->penelaah_id,
-                    'reviewer' => $client->c10D10->reviewer,
-                    'approver_id' => $client->c10D10->penyetuju_id,
-                    'approver' => $client->c10D10->approver,
+                    'preparer_id' => $client->c10D10->timPerikatan?->pegawai_id,
+                    'preparer' => $client->c10D10->timPerikatan?->pegawai,
+                    'reviewer_id' => null,
+                    'reviewer' => null,
+                    'approver_id' => null,
+                    'approver' => null,
                     'created_at' => $client->c10D10->created_at,
                     'updated_at' => $client->c10D10->updated_at,
                 ];
@@ -139,15 +140,15 @@ class AuditFormController extends Controller
 
             return [
                 'id' => $client->id,
-                'name' => $client->nama,
-                'book_year' => $client->tahun_buku,
-                'schedule' => $client->jadwal,
+                'name' => $client->name,
+                'book_year' => $client->book_year,
+                'schedule' => $client->schedule,
                 'team' => $client->users->map(function ($u) {
                     return [
                         'id' => $u->id,
-                        'name' => $u->name,
-                        'role' => $u->pivot->peran,
-                        'inisial' => $u->inisial,
+                        'name' => $u->pegawai?->name,
+                        'role' => $u->pivot->role,
+                        'inisial' => $u->pegawai?->inisial,
                         'email' => $u->email,
                     ];
                 }),
@@ -159,7 +160,15 @@ class AuditFormController extends Controller
         // Fetch users list for Admin (user management) and Partner (team assignment)
         $allUsers = [];
         if ($user->isAdmin() || $user->isPartner()) {
-            $allUsers = User::select('id', 'name', 'role', 'email', 'inisial')->get();
+            $allUsers = User::with('pegawai')->get()->map(function ($u) {
+                return [
+                    'id' => $u->id,
+                    'name' => $u->pegawai?->name,
+                    'role' => $u->pegawai?->jabatan,
+                    'email' => $u->email,
+                    'inisial' => $u->pegawai?->inisial,
+                ];
+            });
         }
 
         return Inertia::render('Dashboard', [
@@ -188,19 +197,19 @@ class AuditFormController extends Controller
             abort(403, 'Hanya Anggota tim perikatan yang dapat mengisi form.');
         }
 
-        $d10Form = C10D10::where('klien_id', $client->id)->first();
+        $d10Form = $client->c10D10;
         $materiality = [
-            'overall_materiality' => $d10Form?->materialitas_keseluruhan ?? null,
-            'performance_materiality' => $d10Form?->materialitas_kinerja ?? null,
-            'tolerable_error' => $d10Form?->kesalahan_ditoleransi ?? null,
+            'overall_materiality' => $d10Form?->overall_materiality ?? null,
+            'performance_materiality' => $d10Form?->performance_materiality ?? null,
+            'tolerable_error' => $d10Form?->tolerable_error ?? null,
         ];
 
         return Inertia::render('AuditForm/Edit', [
             'client' => [
                 'id' => $client->id,
-                'name' => $client->nama,
-                'book_year' => $client->tahun_buku,
-                'schedule' => $client->jadwal,
+                'name' => $client->name,
+                'book_year' => $client->book_year,
+                'schedule' => $client->schedule,
                 'materiality' => $materiality,
             ],
             'formType' => 'A10',
@@ -214,10 +223,13 @@ class AuditFormController extends Controller
     public function editA10(A10 $auditForm)
     {
         $user = Auth::user();
-        $client = Client::findOrFail($auditForm->klien_id);
+        $client = $auditForm->timPerikatan?->client;
+        if (!$client) {
+            abort(404, 'Client tidak ditemukan.');
+        }
 
-        $teamRole = $user->roleInClient($auditForm->klien_id);
-        if ($teamRole !== 'anggota' || $auditForm->pembuat_id !== $user->id) {
+        $teamRole = $user->roleInClient($client->id);
+        if ($teamRole !== 'anggota' || $auditForm->timPerikatan->pegawai_id !== $user->pegawai_id) {
             abort(403, 'Hanya Anggota pembuat form yang dapat melakukan perubahan.');
         }
 
@@ -225,25 +237,25 @@ class AuditFormController extends Controller
             abort(400, 'Laporan yang sudah disetujui tidak dapat diubah.');
         }
 
-        $d10Form = C10D10::where('klien_id', $client->id)->first();
+        $d10Form = $client->c10D10;
         $materiality = [
-            'overall_materiality' => $d10Form?->materialitas_keseluruhan ?? null,
-            'performance_materiality' => $d10Form?->materialitas_kinerja ?? null,
-            'tolerable_error' => $d10Form?->kesalahan_ditoleransi ?? null,
+            'overall_materiality' => $d10Form?->overall_materiality ?? null,
+            'performance_materiality' => $d10Form?->performance_materiality ?? null,
+            'tolerable_error' => $d10Form?->tolerable_error ?? null,
         ];
 
         $formattedForm = [
             'id' => $auditForm->id,
-            'client_id' => $auditForm->klien_id,
-            'client_name' => $client->nama,
-            'book_year' => $client->tahun_buku,
+            'client_id' => $client->id,
+            'client_name' => $client->name,
+            'book_year' => $client->book_year,
             'form_type' => 'A10',
             'status' => $auditForm->status,
-            'reject_reason' => $auditForm->alasan_penolakan,
+            'reject_reason' => $auditForm->reject_reason,
             'section_data' => $auditForm->form_a10,
-            'preparer_id' => $auditForm->pembuat_id,
-            'reviewer_id' => $auditForm->penelaah_id,
-            'approver_id' => $auditForm->penyetuju_id,
+            'preparer_id' => $auditForm->timPerikatan->pegawai_id,
+            'reviewer_id' => null,
+            'approver_id' => null,
             'created_at' => $auditForm->created_at,
             'updated_at' => $auditForm->updated_at,
         ];
@@ -251,9 +263,9 @@ class AuditFormController extends Controller
         return Inertia::render('AuditForm/Edit', [
             'client' => [
                 'id' => $client->id,
-                'name' => $client->nama,
-                'book_year' => $client->tahun_buku,
-                'schedule' => $client->jadwal,
+                'name' => $client->name,
+                'book_year' => $client->book_year,
+                'schedule' => $client->schedule,
                 'materiality' => $materiality,
             ],
             'formType' => 'A10',
@@ -278,25 +290,25 @@ class AuditFormController extends Controller
             abort(403, 'Hanya Anggota tim perikatan yang dapat mengisi form.');
         }
 
-        $c10D10 = C10D10::where('klien_id', $client->id)->with('accounts')->first();
+        $c10D10 = $client->c10D10;
         $formToEdit = null;
 
         if ($c10D10) {
             $formToEdit = [
                 'id' => $c10D10->id,
-                'client_id' => $c10D10->klien_id,
-                'client_name' => $client->nama,
-                'book_year' => $client->tahun_buku,
+                'client_id' => $client->id,
+                'client_name' => $client->name,
+                'book_year' => $client->book_year,
                 'form_type' => 'D10',
                 'status' => $c10D10->status,
-                'reject_reason' => $c10D10->alasan_penolakan,
+                'reject_reason' => $c10D10->reject_reason,
                 'section_data' => $this->getD10SectionData($c10D10),
-                'preparer_id' => $c10D10->pembuat_id,
-                'preparer' => $c10D10->preparer,
-                'reviewer_id' => $c10D10->penelaah_id,
-                'reviewer' => $c10D10->reviewer,
-                'approver_id' => $c10D10->penyetuju_id,
-                'approver' => $c10D10->approver,
+                'preparer_id' => $c10D10->timPerikatan?->pegawai_id,
+                'preparer' => $c10D10->timPerikatan?->pegawai,
+                'reviewer_id' => null,
+                'reviewer' => null,
+                'approver_id' => null,
+                'approver' => null,
                 'created_at' => $c10D10->created_at,
                 'updated_at' => $c10D10->updated_at,
             ];
@@ -305,9 +317,9 @@ class AuditFormController extends Controller
         return Inertia::render('AuditForm/Edit', [
             'client' => [
                 'id' => $client->id,
-                'name' => $client->nama,
-                'book_year' => $client->tahun_buku,
-                'schedule' => $client->jadwal,
+                'name' => $client->name,
+                'book_year' => $client->book_year,
+                'schedule' => $client->schedule,
             ],
             'formType' => 'D10',
             'formToEdit' => $formToEdit,
@@ -320,10 +332,13 @@ class AuditFormController extends Controller
     public function editD10(C10D10 $auditForm)
     {
         $user = Auth::user();
-        $client = Client::findOrFail($auditForm->klien_id);
+        $client = $auditForm->timPerikatan?->client;
+        if (!$client) {
+            abort(404, 'Client tidak ditemukan.');
+        }
 
-        $teamRole = $user->roleInClient($auditForm->klien_id);
-        if ($teamRole !== 'anggota' || $auditForm->pembuat_id !== $user->id) {
+        $teamRole = $user->roleInClient($client->id);
+        if ($teamRole !== 'anggota' || $auditForm->timPerikatan->pegawai_id !== $user->pegawai_id) {
             abort(403, 'Hanya Anggota pembuat form yang dapat melakukan perubahan.');
         }
 
@@ -335,16 +350,16 @@ class AuditFormController extends Controller
 
         $formattedForm = [
             'id' => $auditForm->id,
-            'client_id' => $auditForm->klien_id,
-            'client_name' => $client->nama,
-            'book_year' => $client->tahun_buku,
+            'client_id' => $client->id,
+            'client_name' => $client->name,
+            'book_year' => $client->book_year,
             'form_type' => 'D10',
             'status' => $auditForm->status,
-            'reject_reason' => $auditForm->alasan_penolakan,
+            'reject_reason' => $auditForm->reject_reason,
             'section_data' => $this->getD10SectionData($auditForm),
-            'preparer_id' => $auditForm->pembuat_id,
-            'reviewer_id' => $auditForm->penelaah_id,
-            'approver_id' => $auditForm->penyetuju_id,
+            'preparer_id' => $auditForm->timPerikatan->pegawai_id,
+            'reviewer_id' => null,
+            'approver_id' => null,
             'created_at' => $auditForm->created_at,
             'updated_at' => $auditForm->updated_at,
         ];
@@ -352,9 +367,9 @@ class AuditFormController extends Controller
         return Inertia::render('AuditForm/Edit', [
             'client' => [
                 'id' => $client->id,
-                'name' => $client->nama,
-                'book_year' => $client->tahun_buku,
-                'schedule' => $client->jadwal,
+                'name' => $client->name,
+                'book_year' => $client->book_year,
+                'schedule' => $client->schedule,
             ],
             'formType' => 'D10',
             'formToEdit' => $formattedForm,
@@ -381,9 +396,9 @@ class AuditFormController extends Controller
         return Inertia::render('AuditForm/Edit', [
             'client' => [
                 'id' => $client->id,
-                'name' => $client->nama,
-                'book_year' => $client->tahun_buku,
-                'schedule' => $client->jadwal,
+                'name' => $client->name,
+                'book_year' => $client->book_year,
+                'schedule' => $client->schedule,
             ],
             'formType' => 'C10',
             'formToEdit' => null,
@@ -396,10 +411,13 @@ class AuditFormController extends Controller
     public function editC10(C10D10 $auditForm)
     {
         $user = Auth::user();
-        $client = Client::findOrFail($auditForm->klien_id);
+        $client = $auditForm->timPerikatan?->client;
+        if (!$client) {
+            abort(404, 'Client tidak ditemukan.');
+        }
 
-        $teamRole = $user->roleInClient($auditForm->klien_id);
-        if ($teamRole !== 'anggota' || $auditForm->pembuat_id !== $user->id) {
+        $teamRole = $user->roleInClient($client->id);
+        if ($teamRole !== 'anggota' || $auditForm->timPerikatan->pegawai_id !== $user->pegawai_id) {
             abort(403, 'Hanya Anggota pembuat form yang dapat melakukan perubahan.');
         }
 
@@ -407,9 +425,9 @@ class AuditFormController extends Controller
             abort(400, 'Laporan yang sudah disetujui tidak dapat diubah.');
         }
 
-        // Reconstruct groups
-        $groups = [];
         $auditForm->load('accounts');
+
+        $groups = [];
         foreach ($auditForm->accounts as $account) {
             $groupId = $account->kode_induk;
             if (!isset($groups[$groupId])) {
@@ -423,18 +441,18 @@ class AuditFormController extends Controller
             }
             $groups[$groupId]['children'][] = [
                 'id' => $account->id,
-                'suffix' => $account->sufiks,
+                'suffix' => $account->suffix,
                 'kode_lengkap' => $account->kode_lengkap,
                 'nama' => $account->nama,
                 'saldo_unaudited' => (float)$account->saldo_unaudited,
                 'tcm_unaudited' => $account->tcm_unaudited,
                 'penyesuaian_debit' => (float)$account->penyesuaian_debit,
                 'penyesuaian_kredit' => (float)$account->penyesuaian_kredit,
-                'reff' => $account->referensi,
+                'reff' => $account->reff,
                 'saldo_audited' => (float)$account->saldo_audited,
                 'tcm_audited' => $account->tcm_audited,
-                'saldo_audited_prev' => (float)$account->saldo_audited_sebelumnya,
-                'saldo_audited_prev2' => $account->saldo_audited_sebelumnya2 !== null ? (float)$account->saldo_audited_sebelumnya2 : null,
+                'saldo_audited_prev' => (float)$account->saldo_audited_prev,
+                'saldo_audited_prev2' => $account->saldo_audited_prev2 !== null ? (float)$account->saldo_audited_prev2 : null,
                 'persen_materialitas' => (float)$account->persen_materialitas,
                 'status_materialitas' => $account->status_materialitas,
             ];
@@ -442,19 +460,19 @@ class AuditFormController extends Controller
 
         $formattedForm = [
             'id' => $auditForm->id,
-            'client_id' => $auditForm->klien_id,
-            'client_name' => $client->nama,
-            'book_year' => $client->tahun_buku,
+            'client_id' => $client->id,
+            'client_name' => $client->name,
+            'book_year' => $client->book_year,
             'form_type' => 'C10',
             'status' => $auditForm->status,
-            'reject_reason' => $auditForm->alasan_penolakan,
+            'reject_reason' => $auditForm->reject_reason,
             'section_data' => [
-                'notes' => $auditForm->data_bagian['notes'] ?? '',
+                'notes' => $auditForm->section_data['notes'] ?? '',
                 'groups' => array_values($groups),
             ],
-            'preparer_id' => $auditForm->pembuat_id,
-            'reviewer_id' => $auditForm->penelaah_id,
-            'approver_id' => $auditForm->penyetuju_id,
+            'preparer_id' => $auditForm->timPerikatan->pegawai_id,
+            'reviewer_id' => null,
+            'approver_id' => null,
             'created_at' => $auditForm->created_at,
             'updated_at' => $auditForm->updated_at,
         ];
@@ -462,9 +480,9 @@ class AuditFormController extends Controller
         return Inertia::render('AuditForm/Edit', [
             'client' => [
                 'id' => $client->id,
-                'name' => $client->nama,
-                'book_year' => $client->tahun_buku,
-                'schedule' => $client->jadwal,
+                'name' => $client->name,
+                'book_year' => $client->book_year,
+                'schedule' => $client->schedule,
             ],
             'formType' => 'C10',
             'formToEdit' => $formattedForm,
@@ -472,58 +490,51 @@ class AuditFormController extends Controller
     }
 
     /**
-     * Show a single audit form.
+     * Show form details.
      */
-    public function show(Request $request, $id)
+    public function show($type, $id)
     {
         $user = Auth::user();
 
-        // Check A10 first or C10/D10 based on form_type query
-        $formType = $request->query('form_type');
-        if ($formType === 'A10') {
+        if ($type === 'A10') {
             $form = A10::find($id);
-            $type = 'A10';
-        } elseif ($formType === 'C10' || $formType === 'D10') {
-            $form = C10D10::find($id);
-            $type = $formType;
         } else {
-            // Fallback
-            $form = A10::find($id);
-            $type = 'A10';
-            if (!$form) {
-                $form = C10D10::find($id);
-                $type = 'C10';
-            }
+            $form = C10D10::find($id);
         }
 
         if (!$form) {
             abort(404, 'Laporan tidak ditemukan.');
         }
 
+        $client = $form->timPerikatan?->client;
+        if (!$client) {
+            abort(404, 'Client tidak ditemukan.');
+        }
+
         // Check if user is part of the client team (or admin)
         if (!$user->isAdmin()) {
-            $teamRole = $user->roleInClient($form->klien_id);
+            $teamRole = $user->roleInClient($client->id);
             if (!$teamRole) {
                 abort(403, 'Unauthorized.');
             }
         }
 
-        $form->load(['preparer', 'reviewer', 'approver']);
+        $form->load(['timPerikatan.pegawai']);
 
         if ($type === 'A10') {
             $formatted = [
                 'id' => $form->id,
-                'client_id' => $form->klien_id,
+                'client_id' => $client->id,
                 'form_type' => 'A10',
                 'status' => $form->status,
-                'reject_reason' => $form->alasan_penolakan,
+                'reject_reason' => $form->reject_reason,
                 'section_data' => $form->form_a10,
-                'preparer_id' => $form->pembuat_id,
-                'preparer' => $form->preparer,
-                'reviewer_id' => $form->penelaah_id,
-                'reviewer' => $form->reviewer,
-                'approver_id' => $form->penyetuju_id,
-                'approver' => $form->approver,
+                'preparer_id' => $form->timPerikatan?->pegawai_id,
+                'preparer' => $form->timPerikatan?->pegawai,
+                'reviewer_id' => null,
+                'reviewer' => null,
+                'approver_id' => null,
+                'approver' => null,
                 'created_at' => $form->created_at,
                 'updated_at' => $form->updated_at,
             ];
@@ -532,17 +543,17 @@ class AuditFormController extends Controller
                 $form->load('accounts');
                 $formatted = [
                     'id' => $form->id,
-                    'client_id' => $form->klien_id,
+                    'client_id' => $client->id,
                     'form_type' => 'D10',
                     'status' => $form->status,
-                    'reject_reason' => $form->alasan_penolakan,
+                    'reject_reason' => $form->reject_reason,
                     'section_data' => $this->getD10SectionData($form),
-                    'preparer_id' => $form->pembuat_id,
-                    'preparer' => $form->preparer,
-                    'reviewer_id' => $form->penelaah_id,
-                    'reviewer' => $form->reviewer,
-                    'approver_id' => $form->penyetuju_id,
-                    'approver' => $form->approver,
+                    'preparer_id' => $form->timPerikatan?->pegawai_id,
+                    'preparer' => $form->timPerikatan?->pegawai,
+                    'reviewer_id' => null,
+                    'reviewer' => null,
+                    'approver_id' => null,
+                    'approver' => null,
                     'created_at' => $form->created_at,
                     'updated_at' => $form->updated_at,
                 ];
@@ -562,38 +573,38 @@ class AuditFormController extends Controller
                     }
                     $groups[$groupId]['children'][] = [
                         'id' => $account->id,
-                        'suffix' => $account->sufiks,
+                        'suffix' => $account->suffix,
                         'kode_lengkap' => $account->kode_lengkap,
                         'nama' => $account->nama,
                         'saldo_unaudited' => (float)$account->saldo_unaudited,
                         'tcm_unaudited' => $account->tcm_unaudited,
                         'penyesuaian_debit' => (float)$account->penyesuaian_debit,
                         'penyesuaian_kredit' => (float)$account->penyesuaian_kredit,
-                        'reff' => $account->referensi,
+                        'reff' => $account->reff,
                         'saldo_audited' => (float)$account->saldo_audited,
                         'tcm_audited' => $account->tcm_audited,
-                        'saldo_audited_prev' => (float)$account->saldo_audited_sebelumnya,
-                        'saldo_audited_prev2' => $account->saldo_audited_sebelumnya2 !== null ? (float)$account->saldo_audited_sebelumnya2 : null,
+                        'saldo_audited_prev' => (float)$account->saldo_audited_prev,
+                        'saldo_audited_prev2' => $account->saldo_audited_prev2 !== null ? (float)$account->saldo_audited_prev2 : null,
                         'persen_materialitas' => (float)$account->persen_materialitas,
                         'status_materialitas' => $account->status_materialitas,
                     ];
                 }
                 $formatted = [
                     'id' => $form->id,
-                    'client_id' => $form->klien_id,
+                    'client_id' => $client->id,
                     'form_type' => 'C10',
                     'status' => $form->status,
-                    'reject_reason' => $form->alasan_penolakan,
+                    'reject_reason' => $form->reject_reason,
                     'section_data' => [
-                        'notes' => $form->data_bagian['notes'] ?? '',
+                        'notes' => $form->section_data['notes'] ?? '',
                         'groups' => array_values($groups),
                     ],
-                    'preparer_id' => $form->pembuat_id,
-                    'preparer' => $form->preparer,
-                    'reviewer_id' => $form->penelaah_id,
-                    'reviewer' => $form->reviewer,
-                    'approver_id' => $form->penyetuju_id,
-                    'approver' => $form->approver,
+                    'preparer_id' => $form->timPerikatan?->pegawai_id,
+                    'preparer' => $form->timPerikatan?->pegawai,
+                    'reviewer_id' => null,
+                    'reviewer' => null,
+                    'approver_id' => null,
+                    'approver' => null,
                     'created_at' => $form->created_at,
                     'updated_at' => $form->updated_at,
                 ];
@@ -616,18 +627,20 @@ class AuditFormController extends Controller
             'section_data' => 'required|array',
         ]);
 
-        // Validate team role is 'anggota'
-        $teamRole = $user->roleInClient($validated['client_id']);
-        if ($teamRole !== 'anggota') {
+        // Find tim perikatan
+        $timPerikatan = TimPerikatan::where('pegawai_id', $user->pegawai_id)
+            ->where('client_id', $validated['client_id'])
+            ->first();
+
+        if (!$timPerikatan || $timPerikatan->role !== 'anggota') {
             abort(403, 'Hanya Anggota tim perikatan yang dapat mengisi form.');
         }
 
         if ($validated['form_type'] === 'A10') {
             A10::create([
-                'klien_id' => $validated['client_id'],
+                'tim_perikatan_id' => $timPerikatan->id,
                 'status' => 'draft',
                 'form_a10' => $validated['section_data'],
-                'pembuat_id' => $user->id,
             ]);
         } elseif ($validated['form_type'] === 'D10') {
             $overall = $validated['section_data']['overall_materiality'] ?? null;
@@ -635,14 +648,13 @@ class AuditFormController extends Controller
             $tolerable = $validated['section_data']['tolerable_error'] ?? null;
 
             $c10D10 = C10D10::updateOrCreate(
-                ['klien_id' => $validated['client_id']],
+                ['tim_perikatan_id' => $timPerikatan->id],
                 [
-                    'materialitas_keseluruhan' => $overall,
-                    'materialitas_kinerja' => $performance,
-                    'kesalahan_ditoleransi' => $tolerable,
+                    'overall_materiality' => $overall,
+                    'performance_materiality' => $performance,
+                    'tolerable_error' => $tolerable,
                     'status' => 'draft',
-                    'data_bagian' => $validated['section_data'],
-                    'pembuat_id' => $user->id,
+                    'section_data' => $validated['section_data'],
                 ]
             );
 
@@ -732,18 +744,18 @@ class AuditFormController extends Controller
                             'kode_induk' => $kodeInduk,
                             'nama_induk' => $namaInduk,
                             'saldo_normal' => $saldoNormal,
-                            'sufiks' => $kodeLengkap ? substr($kodeLengkap, -2) : '',
+                            'suffix' => $kodeLengkap ? substr($kodeLengkap, -2) : '',
                             'kode_lengkap' => $kodeLengkap,
                             'nama' => $nama,
                             'saldo_unaudited' => $inhouse,
                             'tcm_unaudited' => null,
                             'penyesuaian_debit' => 0,
                             'penyesuaian_kredit' => 0,
-                            'referensi' => null,
+                            'reff' => null,
                             'saldo_audited' => $inhouse,
                             'tcm_audited' => null,
-                            'saldo_audited_sebelumnya' => 0,
-                            'saldo_audited_sebelumnya2' => null,
+                            'saldo_audited_prev' => 0,
+                            'saldo_audited_prev2' => null,
                             'persen_materialitas' => $persen,
                             'status_materialitas' => $statusMat,
                         ]);
@@ -752,16 +764,15 @@ class AuditFormController extends Controller
             }
         } elseif ($validated['form_type'] === 'C10') {
             $c10D10 = C10D10::firstOrCreate(
-                ['klien_id' => $validated['client_id']],
+                ['tim_perikatan_id' => $timPerikatan->id],
                 [
                     'status' => 'draft',
-                    'data_bagian' => ['notes' => $validated['section_data']['notes'] ?? ''],
-                    'pembuat_id' => $user->id,
+                    'section_data' => ['notes' => $validated['section_data']['notes'] ?? ''],
                 ]
             );
 
             $c10D10->update([
-                'data_bagian' => array_merge($c10D10->data_bagian ?? [], [
+                'section_data' => array_merge($c10D10->section_data ?? [], [
                     'notes' => $validated['section_data']['notes'] ?? ''
                 ])
             ]);
@@ -776,18 +787,18 @@ class AuditFormController extends Controller
                         'kode_induk' => $group['kode_induk'] ?? '',
                         'nama_induk' => $group['nama_induk'] ?? '',
                         'saldo_normal' => $group['saldo_normal'] ?? 'debit',
-                        'sufiks' => $child['suffix'] ?? '',
+                        'suffix' => $child['suffix'] ?? '',
                         'kode_lengkap' => $child['kode_lengkap'] ?? '',
                         'nama' => $child['nama'] ?? '',
                         'saldo_unaudited' => $child['saldo_unaudited'] ?? 0,
                         'tcm_unaudited' => $child['tcm_unaudited'] ?? null,
                         'penyesuaian_debit' => $child['penyesuaian_debit'] ?? 0,
                         'penyesuaian_kredit' => $child['penyesuaian_kredit'] ?? 0,
-                        'referensi' => $child['reff'] ?? null,
+                        'reff' => $child['reff'] ?? null,
                         'saldo_audited' => $child['saldo_audited'] ?? 0,
                         'tcm_audited' => $child['tcm_audited'] ?? null,
-                        'saldo_audited_sebelumnya' => $child['saldo_audited_prev'] ?? 0,
-                        'saldo_audited_sebelumnya2' => $child['saldo_audited_prev2'] ?? null,
+                        'saldo_audited_prev' => $child['saldo_audited_prev'] ?? 0,
+                        'saldo_audited_prev2' => $child['saldo_audited_prev2'] ?? null,
                         'persen_materialitas' => $child['persen_materialitas'] ?? 50.00,
                         'status_materialitas' => $child['status_materialitas'] ?? 'Tidak',
                     ]);
@@ -812,8 +823,7 @@ class AuditFormController extends Controller
             $form = C10D10::findOrFail($id);
         }
 
-        $teamRole = $user->roleInClient($form->klien_id);
-        if ($teamRole !== 'anggota' || $form->pembuat_id !== $user->id) {
+        if ($form->timPerikatan->pegawai_id !== $user->pegawai_id) {
             abort(403, 'Hanya Anggota pembuat form yang dapat melakukan perubahan.');
         }
 
@@ -835,10 +845,10 @@ class AuditFormController extends Controller
             $tolerable = $validated['section_data']['tolerable_error'] ?? null;
 
             $form->update([
-                'materialitas_keseluruhan' => $overall,
-                'materialitas_kinerja' => $performance,
-                'kesalahan_ditoleransi' => $tolerable,
-                'data_bagian' => $validated['section_data'],
+                'overall_materiality' => $overall,
+                'performance_materiality' => $performance,
+                'tolerable_error' => $tolerable,
+                'section_data' => $validated['section_data'],
             ]);
 
             // Sync accounts
@@ -927,18 +937,18 @@ class AuditFormController extends Controller
                             'kode_induk' => $kodeInduk,
                             'nama_induk' => $namaInduk,
                             'saldo_normal' => $saldoNormal,
-                            'sufiks' => $kodeLengkap ? substr($kodeLengkap, -2) : '',
+                            'suffix' => $kodeLengkap ? substr($kodeLengkap, -2) : '',
                             'kode_lengkap' => $kodeLengkap,
                             'nama' => $nama,
                             'saldo_unaudited' => $inhouse,
                             'tcm_unaudited' => null,
                             'penyesuaian_debit' => 0,
                             'penyesuaian_kredit' => 0,
-                            'referensi' => null,
+                            'reff' => null,
                             'saldo_audited' => $inhouse,
                             'tcm_audited' => null,
-                            'saldo_audited_sebelumnya' => 0,
-                            'saldo_audited_sebelumnya2' => null,
+                            'saldo_audited_prev' => 0,
+                            'saldo_audited_prev2' => null,
                             'persen_materialitas' => $persen,
                             'status_materialitas' => $statusMat,
                         ]);
@@ -947,7 +957,7 @@ class AuditFormController extends Controller
             }
         } elseif ($form_type === 'C10') {
             $form->update([
-                'data_bagian' => array_merge($form->data_bagian ?? [], [
+                'section_data' => array_merge($form->section_data ?? [], [
                     'notes' => $validated['section_data']['notes'] ?? ''
                 ])
             ]);
@@ -962,18 +972,18 @@ class AuditFormController extends Controller
                         'kode_induk' => $group['kode_induk'] ?? '',
                         'nama_induk' => $group['nama_induk'] ?? '',
                         'saldo_normal' => $group['saldo_normal'] ?? 'debit',
-                        'sufiks' => $child['suffix'] ?? '',
+                        'suffix' => $child['suffix'] ?? '',
                         'kode_lengkap' => $child['kode_lengkap'] ?? '',
                         'nama' => $child['nama'] ?? '',
                         'saldo_unaudited' => $child['saldo_unaudited'] ?? 0,
                         'tcm_unaudited' => $child['tcm_unaudited'] ?? null,
                         'penyesuaian_debit' => $child['penyesuaian_debit'] ?? 0,
                         'penyesuaian_kredit' => $child['penyesuaian_kredit'] ?? 0,
-                        'referensi' => $child['reff'] ?? null,
+                        'reff' => $child['reff'] ?? null,
                         'saldo_audited' => $child['saldo_audited'] ?? 0,
                         'tcm_audited' => $child['tcm_audited'] ?? null,
-                        'saldo_audited_sebelumnya' => $child['saldo_audited_prev'] ?? 0,
-                        'saldo_audited_sebelumnya2' => $child['saldo_audited_prev2'] ?? null,
+                        'saldo_audited_prev' => $child['saldo_audited_prev'] ?? 0,
+                        'saldo_audited_prev2' => $child['saldo_audited_prev2'] ?? null,
                         'persen_materialitas' => $child['persen_materialitas'] ?? 50.00,
                         'status_materialitas' => $child['status_materialitas'] ?? 'Tidak',
                     ]);
@@ -1005,8 +1015,12 @@ class AuditFormController extends Controller
             abort(404, 'Laporan tidak ditemukan.');
         }
 
-        $teamRole = $user->roleInClient($form->klien_id);
-        if ($teamRole !== 'anggota' || $form->pembuat_id !== $user->id) {
+        $client = $form->timPerikatan?->client;
+        if (!$client) {
+            abort(404, 'Client tidak ditemukan.');
+        }
+
+        if ($form->timPerikatan->pegawai_id !== $user->pegawai_id) {
             abort(403, 'Unauthorized.');
         }
 
@@ -1023,7 +1037,7 @@ class AuditFormController extends Controller
 
         $form->update([
             'status' => $nextStatus,
-            'alasan_penolakan' => null,
+            'reject_reason' => null,
         ]);
 
         return redirect()->route('dashboard')->with('success', 'Laporan berhasil diajukan ke Ketua Tim.');
@@ -1050,10 +1064,20 @@ class AuditFormController extends Controller
             abort(404, 'Laporan tidak ditemukan.');
         }
 
-        $teamRole = $user->roleInClient($form->klien_id);
-        if (!in_array($teamRole, ['ketua_tim', 'supervisor', 'partner'])) {
+        $client = $form->timPerikatan?->client;
+        if (!$client) {
+            abort(404, 'Client tidak ditemukan.');
+        }
+
+        $timPerikatan = TimPerikatan::where('pegawai_id', $user->pegawai_id)
+            ->where('client_id', $client->id)
+            ->first();
+
+        if (!$timPerikatan || !in_array($timPerikatan->role, ['ketua_tim', 'supervisor', 'partner'])) {
             abort(403, 'Hanya Ketua Tim, Supervisor, atau Partner yang dapat melakukan review.');
         }
+
+        $teamRole = $timPerikatan->role;
 
         $validated = $request->validate([
             'action' => 'required|in:approve,reject',
@@ -1072,8 +1096,7 @@ class AuditFormController extends Controller
 
             $form->update([
                 'status' => $rejectStatus,
-                'alasan_penolakan' => $validated['reject_reason'],
-                'penelaah_id' => $user->id,
+                'reject_reason' => $validated['reject_reason'],
             ]);
 
             $roleLabel = $teamRole === 'ketua_tim' ? 'Ketua Tim' : ($teamRole === 'supervisor' ? 'Supervisor' : 'Partner');
@@ -1086,7 +1109,6 @@ class AuditFormController extends Controller
             }
             $form->update([
                 'status' => 'pending_supervisor',
-                'penelaah_id' => $user->id,
             ]);
             return redirect()->route('dashboard')->with('success', 'Laporan disetujui Ketua Tim. Menunggu review Supervisor.');
         } elseif ($teamRole === 'supervisor') {
@@ -1095,7 +1117,6 @@ class AuditFormController extends Controller
             }
             $form->update([
                 'status' => 'pending_partner',
-                'penelaah_id' => $user->id,
             ]);
             return redirect()->route('dashboard')->with('success', 'Laporan disetujui Supervisor. Menunggu review Partner.');
         } elseif ($teamRole === 'partner') {
@@ -1104,7 +1125,6 @@ class AuditFormController extends Controller
             }
             $form->update([
                 'status' => 'final_approved',
-                'penyetuju_id' => $user->id,
             ]);
             return redirect()->route('dashboard')->with('success', 'Laporan berhasil disetujui Final oleh Partner.');
         }
@@ -1124,10 +1144,10 @@ class AuditFormController extends Controller
         ]);
 
         Client::create([
-            'nama' => strtoupper($request->name),
-            'tahun_buku' => $request->book_year,
-            'jadwal' => $request->schedule,
-            'dibuat_oleh' => auth()->id(),
+            'name' => strtoupper($request->name),
+            'book_year' => $request->book_year,
+            'schedule' => $request->schedule,
+            'created_by' => auth()->user()?->pegawai_id,
         ]);
 
         return redirect()->route('dashboard')->with('success', 'Perikatan Klien baru berhasil dibuat.');
@@ -1145,9 +1165,9 @@ class AuditFormController extends Controller
         ]);
 
         $client->update([
-            'nama' => strtoupper($request->name),
-            'tahun_buku' => $request->book_year,
-            'jadwal' => $request->schedule,
+            'name' => strtoupper($request->name),
+            'book_year' => $request->book_year,
+            'schedule' => $request->schedule,
         ]);
 
         return redirect()->route('dashboard')->with('success', 'Perikatan Klien berhasil diperbarui.');
@@ -1173,11 +1193,14 @@ class AuditFormController extends Controller
             'team.*.role' => 'required|string|in:anggota,ketua_tim,supervisor,partner',
         ]);
 
-        // Detach old team and attach new assignments
-        $client->users()->detach();
+        // Detach old team (using pegawai relation)
+        $client->pegawais()->detach();
 
         foreach ($request->team as $member) {
-            $client->users()->attach($member['user_id'], ['peran' => $member['role']]);
+            $user = User::find($member['user_id']);
+            if ($user && $user->pegawai_id) {
+                $client->pegawais()->attach($user->pegawai_id, ['role' => $member['role']]);
+            }
         }
 
         return redirect()->route('dashboard')->with('success', 'Tim Perikatan berhasil disave/diperbarui.');
@@ -1200,7 +1223,6 @@ class AuditFormController extends Controller
             $sheet0 = isset($sheets['A10']) ? $sheets['A10'] : array_values($sheets)[0];
             
             // Map the ODS data to the structured format
-            // We use the same mapper as in the seeder
             $seeder = new \Database\Seeders\DatabaseSeeder();
             $reflector = new \ReflectionClass($seeder);
             $method = $reflector->getMethod('buildStructuredData');
@@ -1242,18 +1264,18 @@ class AuditFormController extends Controller
             ]
         ];
 
-        $dbData = $c10D10->data_bagian ?? [];
+        $dbData = $c10D10->section_data ?? [];
         $d10Data = array_merge($defaultD10Data, $dbData);
 
         // Override database materiality values specifically if they are set in the model
-        if ($c10D10->materialitas_keseluruhan !== null) {
-            $d10Data['overall_materiality'] = (float)$c10D10->materialitas_keseluruhan;
+        if ($c10D10->overall_materiality !== null) {
+            $d10Data['overall_materiality'] = (float)$c10D10->overall_materiality;
         }
-        if ($c10D10->materialitas_kinerja !== null) {
-            $d10Data['performance_materiality'] = (float)$c10D10->materialitas_kinerja;
+        if ($c10D10->performance_materiality !== null) {
+            $d10Data['performance_materiality'] = (float)$c10D10->performance_materiality;
         }
-        if ($c10D10->kesalahan_ditoleransi !== null) {
-            $d10Data['tolerable_error'] = (float)$c10D10->kesalahan_ditoleransi;
+        if ($c10D10->tolerable_error !== null) {
+            $d10Data['tolerable_error'] = (float)$c10D10->tolerable_error;
         }
 
         // Pull accounts
@@ -1265,7 +1287,7 @@ class AuditFormController extends Controller
                     'nama' => $account->kode_lengkap ? ($account->kode_lengkap . ' - ' . $account->nama) : $account->nama,
                     'inhouse' => (float)$account->saldo_unaudited,
                     'persen' => (float)$account->persen_materialitas,
-                    'nominal' => $c10D10->materialitas_keseluruhan ? (float)round($c10D10->materialitas_keseluruhan * ($account->persen_materialitas / 100)) : 0,
+                    'nominal' => $c10D10->overall_materiality ? (float)round($c10D10->overall_materiality * ($account->persen_materialitas / 100)) : 0,
                     'status' => $account->status_materialitas,
                 ];
             }

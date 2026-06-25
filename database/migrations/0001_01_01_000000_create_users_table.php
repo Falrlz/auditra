@@ -13,12 +13,10 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
+            $table->foreignId('pegawai_id')->nullable()->unique()->constrained('pegawai')->onDelete('cascade');
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            $table->string('role')->default('staff'); // 'admin', 'partner', 'manager', 'staff'
-            $table->string('inisial')->nullable();
             $table->rememberToken();
             $table->softDeletes();
             $table->timestamps();

@@ -11,16 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('clients', function (Blueprint $table) {
+        Schema::create('pegawai', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('book_year');
-            $table->string('schedule');
-            $table->foreignId('created_by')->nullable()->constrained('pegawai')->onDelete('set null');
+            $table->string('jabatan'); // admin, partner, manager, staff
+            $table->string('inisial')->nullable();
+            $table->string('telp')->nullable();
+            $table->text('alamat')->nullable();
+            $table->text('cv')->nullable();
+            $table->string('status')->default('aktif'); // aktif, cuti, nonaktif
             $table->softDeletes();
             $table->timestamps();
-
-            $table->unique(['name', 'book_year']);
         });
     }
 
@@ -29,6 +30,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('clients');
+        Schema::dropIfExists('pegawai');
     }
 };

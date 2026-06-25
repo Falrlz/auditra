@@ -2,15 +2,15 @@
 
 use App\Models\User;
 use App\Models\Client;
-use App\Models\EngagementTeam;
+use App\Models\TimPerikatan;
 use App\Models\A10;
 
 test('workflow: specific rejection and direct resubmission routing bypass', function () {
     // 1. Setup Client
     $client = Client::create([
-        'nama' => 'PT Workflow Client',
-        'tahun_buku' => '2026',
-        'jadwal' => 'Workflow Schedule',
+        'name' => 'PT Workflow Client',
+        'book_year' => '2026',
+        'schedule' => 'Workflow Schedule',
     ]);
 
     // 2. Setup Users
@@ -20,17 +20,16 @@ test('workflow: specific rejection and direct resubmission routing bypass', func
     $partner = User::factory()->create(['role' => 'partner']);
 
     // 3. Assign Roles in Client Engagement Team
-    EngagementTeam::create(['klien_id' => $client->id, 'user_id' => $anggota->id, 'peran' => 'anggota']);
-    EngagementTeam::create(['klien_id' => $client->id, 'user_id' => $ketuaTim->id, 'peran' => 'ketua_tim']);
-    EngagementTeam::create(['klien_id' => $client->id, 'user_id' => $supervisor->id, 'peran' => 'supervisor']);
-    EngagementTeam::create(['klien_id' => $client->id, 'user_id' => $partner->id, 'peran' => 'partner']);
+    $timAnggota = TimPerikatan::create(['client_id' => $client->id, 'pegawai_id' => $anggota->pegawai_id, 'role' => 'anggota']);
+    $timKetuaTim = TimPerikatan::create(['client_id' => $client->id, 'pegawai_id' => $ketuaTim->pegawai_id, 'role' => 'ketua_tim']);
+    $timSupervisor = TimPerikatan::create(['client_id' => $client->id, 'pegawai_id' => $supervisor->pegawai_id, 'role' => 'supervisor']);
+    $timPartner = TimPerikatan::create(['client_id' => $client->id, 'pegawai_id' => $partner->pegawai_id, 'role' => 'partner']);
 
     // 4. Anggota creates form A10 as draft
     $form = A10::create([
-        'klien_id' => $client->id,
+        'tim_perikatan_id' => $timAnggota->id,
         'status' => 'draft',
         'form_a10' => ['notes' => 'Initial Draft Content'],
-        'pembuat_id' => $anggota->id,
     ]);
 
     // 5. Anggota submits form -> should go to pending_ketua_tim
@@ -51,7 +50,7 @@ test('workflow: specific rejection and direct resubmission routing bypass', func
 
     $form->refresh();
     $this->assertEquals('rejected_ketua_tim', $form->status);
-    $this->assertEquals('Need detail clarification by Ketua Tim', $form->alasan_penolakan);
+    $this->assertEquals('Need detail clarification by Ketua Tim', $form->reject_reason);
 
     // 7. Anggota can edit when status is rejected_ketua_tim
     $this->actingAs($anggota)
