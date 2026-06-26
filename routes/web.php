@@ -24,6 +24,19 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
+    // Presensi routes
+    Route::get('/presensi', [\App\Http\Controllers\PresensiController::class, 'index'])->name('presensi.index');
+    Route::post('/presensi/checkin', [\App\Http\Controllers\PresensiController::class, 'checkIn'])->name('presensi.checkin');
+    Route::post('/presensi/checkout', [\App\Http\Controllers\PresensiController::class, 'checkOut'])->name('presensi.checkout');
+    Route::post('/presensi/izin-sakit', [\App\Http\Controllers\PresensiController::class, 'submitIzinSakit'])->name('presensi.izin-sakit');
+
+    // Admin & Partner Presensi routes
+    Route::middleware('role:admin,partner')->group(function () {
+        Route::post('/presensi/assign-dinas-luar', [\App\Http\Controllers\PresensiController::class, 'assignDinasLuar'])->name('presensi.assign-dinas-luar');
+        Route::post('/presensi/izin-sakit/{pengajuan}/approve', [\App\Http\Controllers\PresensiController::class, 'approveIzinSakit'])->name('presensi.izin-sakit.approve');
+        Route::post('/presensi/izin-sakit/{pengajuan}/reject', [\App\Http\Controllers\PresensiController::class, 'rejectIzinSakit'])->name('presensi.izin-sakit.reject');
+    });
+
     // Admin routes
     Route::middleware('role:admin')->group(function () {
         Route::post('/users', [\App\Http\Controllers\UserController::class, 'store'])->name('users.store');
