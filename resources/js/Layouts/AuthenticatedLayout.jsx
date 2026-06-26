@@ -14,6 +14,7 @@ export default function AuthenticatedLayout({ header, children }) {
 
     const pageUrl = usePage().url;
     const hasUsersQuery = pageUrl.includes('tab=users');
+    const isPresensiActive = pageUrl.includes('/presensi');
 
     const toggleSidebar = () => {
         setIsSidebarCollapsed((prev) => {
@@ -26,7 +27,7 @@ export default function AuthenticatedLayout({ header, children }) {
     // Set groups open states. By default, open them if active child is present
     const [openGroups, setOpenGroups] = useState(() => {
         return {
-            sdm: hasUsersQuery,
+            sdm: hasUsersQuery || isPresensiActive,
             pegawai: hasUsersQuery,
             pelatihan: false
         };
@@ -112,9 +113,10 @@ export default function AuthenticatedLayout({ header, children }) {
             ),
             children: [
                 {
-                    type: 'placeholder',
+                    type: 'item',
                     name: 'Presensi',
-                    featureName: 'Presensi Harian',
+                    href: route('presensi.index'),
+                    active: route().current('presensi.index'),
                     icon: (
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />

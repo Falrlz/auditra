@@ -6,24 +6,24 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class Presensi extends Model
+class PengajuanIzin extends Model
 {
     use HasFactory;
 
-    protected $table = 'presensi';
+    protected $table = 'pengajuan_izin';
 
     protected $fillable = [
         'pegawai_id',
-        'tanggal',
-        'checkin_at',
-        'checkout_at',
-        'status',
-        'pengajuan_izin_id',
+        'tanggal_mulai',
+        'tanggal_selesai',
+        'tipe',
+        'keterangan',
+        'dokumen',
+        'status_approval',
+        'approved_by',
     ];
 
     protected $casts = [
-        'checkin_at' => 'datetime',
-        'checkout_at' => 'datetime',
     ];
 
     public function pegawai(): BelongsTo
@@ -31,8 +31,8 @@ class Presensi extends Model
         return $this->belongsTo(Pegawai::class, 'pegawai_id');
     }
 
-    public function pengajuanIzin(): BelongsTo
+    public function approver(): BelongsTo
     {
-        return $this->belongsTo(PengajuanIzin::class, 'pengajuan_izin_id');
+        return $this->belongsTo(Pegawai::class, 'approved_by');
     }
 }
