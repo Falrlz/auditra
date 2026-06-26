@@ -15,28 +15,44 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => ['required', 'string', 'min:8'],
-            'role' => 'required|string|in:admin,partner,manager,staff',
-            'inisial' => 'required|string|max:10',
-        ]);
+        if ($request->filled('pegawai_id')) {
+            $request->validate([
+                'email' => 'required|string|email|max:255|unique:users,email',
+                'password' => ['required', 'string', 'min:8'],
+                'pegawai_id' => 'required|exists:pegawai,id|unique:users,pegawai_id',
+            ]);
 
-        // Create pegawai record
-        $pegawai = Pegawai::create([
-            'name' => $request->name,
-            'jabatan' => $request->role,
-            'inisial' => strtoupper($request->inisial),
-            'status' => 'aktif',
-        ]);
+            User::create([
+                'pegawai_id' => $request->pegawai_id,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'is_active' => true,
+            ]);
+        } else {
+            $request->validate([
+                'name' => 'required|string|max:255',
+                'email' => 'required|string|email|max:255|unique:users,email',
+                'password' => ['required', 'string', 'min:8'],
+                'role' => 'required|string|in:admin,partner,manager,staff',
+                'inisial' => 'required|string|max:10|unique:pegawai,inisial',
+            ]);
 
-        // Create user record
-        User::create([
-            'pegawai_id' => $pegawai->id,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-        ]);
+            // Create pegawai record
+            $pegawai = Pegawai::create([
+                'name' => $request->name,
+                'jabatan' => $request->role,
+                'inisial' => strtoupper($request->inisial),
+                'status' => 'pending',
+            ]);
+
+            // Create user record
+            User::create([
+                'pegawai_id' => $pegawai->id,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'is_active' => false,
+            ]);
+        }
 
         return redirect()->back()->with('success', 'User registered successfully.');
     }
@@ -46,30 +62,42 @@ class UserController extends Controller
      */
     public function update(Request $request, User $user)
     {
-        // For unique validation of inisial, we check the pegawai associated with this user
         $pegawaiId = $user->pegawai_id;
 
         $request->validate([
-            'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
             'password' => ['nullable', 'string', 'min:8'],
-            'role' => 'required|string|in:admin,partner,manager,staff',
-            'inisial' => 'required|string|max:10|unique:pegawai,inisial,' . $pegawaiId,
+            'is_active' => 'nullable|boolean',
+            'name' => 'nullable|string|max:255',
+            'role' => 'nullable|string|in:admin,partner,manager,staff',
+            'inisial' => 'nullable|string|max:10|unique:pegawai,inisial,' . $pegawaiId,
         ]);
 
-        // Update pegawai record
+        // Update pegawai record if details are provided (backward compatibility)
         if ($user->pegawai) {
-            $user->pegawai->update([
-                'name' => $request->name,
-                'jabatan' => $request->role,
-                'inisial' => strtoupper($request->inisial),
-            ]);
+            $pegawaiData = [];
+            if ($request->filled('name')) {
+                $pegawaiData['name'] = $request->name;
+            }
+            if ($request->filled('role')) {
+                $pegawaiData['jabatan'] = $request->role;
+            }
+            if ($request->filled('inisial')) {
+                $pegawaiData['inisial'] = strtoupper($request->inisial);
+            }
+            if (!empty($pegawaiData)) {
+                $user->pegawai->update($pegawaiData);
+            }
         }
 
         // Update user record
         $userData = [
             'email' => $request->email,
         ];
+
+        if ($request->has('is_active')) {
+            $userData['is_active'] = (bool)$request->is_active;
+        }
 
         if ($request->filled('password')) {
             $userData['password'] = Hash::make($request->password);
@@ -81,6 +109,23 @@ class UserController extends Controller
     }
 
     /**
+     * Toggle active/inactive status of the user (Admin only).
+     */
+    public function toggleStatus(User $user)
+    {
+        if ($user->id === auth()->id()) {
+            return redirect()->back()->with('error', 'Anda tidak dapat menonaktifkan akun Anda sendiri.');
+        }
+
+        $user->update([
+            'is_active' => !$user->is_active
+        ]);
+
+        $statusStr = $user->is_active ? 'diaktifkan' : 'dinonaktifkan';
+        return redirect()->back()->with('success', "User berhasil {$statusStr}.");
+    }
+
+    /**
      * Remove the specified user from storage (Admin only).
      */
     public function destroy(User $user)
@@ -89,12 +134,8 @@ class UserController extends Controller
             return redirect()->back()->with('error', 'Anda tidak dapat menghapus akun Anda sendiri.');
         }
 
-        // Soft delete both user and associated pegawai
-        $pegawai = $user->pegawai;
+        // Soft delete user only (does not delete associated pegawai)
         $user->delete();
-        if ($pegawai) {
-            $pegawai->delete();
-        }
 
         return redirect()->back()->with('success', 'User berhasil dihapus.');
     }

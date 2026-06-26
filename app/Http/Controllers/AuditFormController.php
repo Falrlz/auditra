@@ -27,7 +27,7 @@ class AuditFormController extends Controller
         // Admin and Partner can see all clients. Staff & Manager only see their assigned clients.
         if (!$user->isAdmin() && !$user->isPartner()) {
             $clientsQuery->whereHas('users', function ($query) use ($user) {
-                $query->where('pegawai_id', $user->pegawai_id);
+                $query->where('users.pegawai_id', $user->pegawai_id);
             });
         }
 
@@ -159,6 +159,7 @@ class AuditFormController extends Controller
 
         // Fetch users list for Admin (user management) and Partner (team assignment)
         $allUsers = [];
+        $allPegawai = [];
         if ($user->isAdmin() || $user->isPartner()) {
             $allUsers = User::with('pegawai')->get()->map(function ($u) {
                 return [
@@ -167,6 +168,23 @@ class AuditFormController extends Controller
                     'role' => $u->pegawai?->jabatan,
                     'email' => $u->email,
                     'inisial' => $u->pegawai?->inisial,
+                    'is_active' => (bool)$u->is_active,
+                ];
+            });
+
+            $allPegawai = \App\Models\Pegawai::with('user')->get()->map(function ($p) {
+                return [
+                    'id' => $p->id,
+                    'name' => $p->name,
+                    'jabatan' => $p->jabatan,
+                    'inisial' => $p->inisial,
+                    'telp' => $p->telp,
+                    'alamat' => $p->alamat,
+                    'cv' => $p->cv,
+                    'status' => $p->status,
+                    'has_user' => $p->user !== null,
+                    'user_email' => $p->user?->email,
+                    'user_id' => $p->user?->id,
                 ];
             });
         }
@@ -174,6 +192,7 @@ class AuditFormController extends Controller
         return Inertia::render('Dashboard', [
             'clients' => $formattedClients,
             'allUsers' => $allUsers,
+            'allPegawai' => $allPegawai,
             'auth' => [
                 'user' => $user
             ]

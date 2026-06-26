@@ -27,6 +27,18 @@ class User extends Authenticatable
         'name',
         'inisial',
         'role',
+        'is_active',
+    ];
+
+    /**
+     * The accessors to append to the model's array form.
+     *
+     * @var array
+     */
+    protected $appends = [
+        'name',
+        'inisial',
+        'role',
     ];
 
     /**
@@ -49,6 +61,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_active' => 'boolean',
         ];
     }
 
