@@ -5,8 +5,8 @@ import AuditFormWizard from '@/Components/AuditFormWizard';
 import AuditFormD10Wizard from '@/Components/AuditFormD10Wizard';
 import axios from 'axios';
 
-export default function Dashboard({ auth, clients, allUsers }) {
-    const user = auth.user;
+export default function Dashboard({ auth, clients, allUsers, allPegawai = [] }) {
+    const user = auth?.user;
     const urlParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
     const activeTab = urlParams.get('tab') === 'users' ? 'users' : 'perikatan';
     const [viewDetailForm, setViewDetailForm] = useState(null);
@@ -47,8 +47,12 @@ export default function Dashboard({ auth, clients, allUsers }) {
     const [teamClient, setTeamClient] = useState(null);
     const [teamRows, setTeamRows] = useState([]);
 
+    // User Sub-tab state
+    const [userSubTab, setUserSubTab] = useState('users'); // 'users' or 'pegawai'
+
     // User Register Modal State
     const [showAddUserModal, setShowAddUserModal] = useState(false);
+    const [selectedPegawaiId, setSelectedPegawaiId] = useState('new'); // 'new' or specific pegawai ID
     const [usrName, setUsrName] = useState('');
     const [usrEmail, setUsrEmail] = useState('');
     const [usrPassword, setUsrPassword] = useState('');
@@ -58,11 +62,29 @@ export default function Dashboard({ auth, clients, allUsers }) {
     // User Edit Modal State
     const [showEditUserModal, setShowEditUserModal] = useState(false);
     const [editUserData, setEditUserData] = useState(null);
-    const [editUsrName, setEditUsrName] = useState('');
     const [editUsrEmail, setEditUsrEmail] = useState('');
     const [editUsrPassword, setEditUsrPassword] = useState('');
-    const [editUsrRole, setEditUsrRole] = useState('staff');
-    const [editUsrInisial, setEditUsrInisial] = useState('');
+    const [editUsrIsActive, setEditUsrIsActive] = useState(true);
+
+    // Pegawai CRUD Modals State
+    const [showAddPegawaiModal, setShowAddPegawaiModal] = useState(false);
+    const [pegName, setPegName] = useState('');
+    const [pegInisial, setPegInisial] = useState('');
+    const [pegJabatan, setPegJabatan] = useState('staff');
+    const [pegTelp, setPegTelp] = useState('');
+    const [pegAlamat, setPegAlamat] = useState('');
+    const [pegCv, setPegCv] = useState('');
+    const [pegStatus, setPegStatus] = useState('aktif');
+
+    const [showEditPegawaiModal, setShowEditPegawaiModal] = useState(false);
+    const [editPegawaiData, setEditPegawaiData] = useState(null);
+    const [editPegName, setEditPegName] = useState('');
+    const [editPegInisial, setEditPegInisial] = useState('');
+    const [editPegJabatan, setEditPegJabatan] = useState('staff');
+    const [editPegTelp, setEditPegTelp] = useState('');
+    const [editPegAlamat, setEditPegAlamat] = useState('');
+    const [editPegCv, setEditPegCv] = useState('');
+    const [editPegStatus, setEditPegStatus] = useState('aktif');
 
     // Review Modal State
     const [showReviewModal, setShowReviewModal] = useState(false);
@@ -233,13 +255,19 @@ export default function Dashboard({ auth, clients, allUsers }) {
     // Register User Action
     const handleAddUserSubmit = (e) => {
         e.preventDefault();
-        router.post(route('users.store'), {
-            name: usrName,
+        const payload = {
             email: usrEmail,
             password: usrPassword,
-            role: usrRole,
-            inisial: usrInisial
-        }, {
+        };
+        if (selectedPegawaiId === 'new') {
+            payload.name = usrName;
+            payload.role = usrRole;
+            payload.inisial = usrInisial;
+        } else {
+            payload.pegawai_id = selectedPegawaiId;
+        }
+
+        router.post(route('users.store'), payload, {
             onSuccess: () => {
                 setShowAddUserModal(false);
                 setUsrName('');
@@ -247,6 +275,7 @@ export default function Dashboard({ auth, clients, allUsers }) {
                 setUsrPassword('');
                 setUsrRole('staff');
                 setUsrInisial('');
+                setSelectedPegawaiId('new');
             }
         });
     };
@@ -254,31 +283,25 @@ export default function Dashboard({ auth, clients, allUsers }) {
     // Edit User Action
     const handleOpenEditUser = (userToEdit) => {
         setEditUserData(userToEdit);
-        setEditUsrName(userToEdit.name);
         setEditUsrEmail(userToEdit.email);
         setEditUsrPassword('');
-        setEditUsrRole(userToEdit.role);
-        setEditUsrInisial(userToEdit.inisial || '');
+        setEditUsrIsActive(userToEdit.is_active !== false);
         setShowEditUserModal(true);
     };
 
     const handleEditUserSubmit = (e) => {
         e.preventDefault();
         router.post(route('users.update', editUserData.id), {
-            name: editUsrName,
             email: editUsrEmail,
             password: editUsrPassword,
-            role: editUsrRole,
-            inisial: editUsrInisial
+            is_active: editUsrIsActive ? 1 : 0
         }, {
             onSuccess: () => {
                 setShowEditUserModal(false);
                 setEditUserData(null);
-                setEditUsrName('');
                 setEditUsrEmail('');
                 setEditUsrPassword('');
-                setEditUsrRole('staff');
-                setEditUsrInisial('');
+                setEditUsrIsActive(true);
             }
         });
     };
@@ -291,6 +314,100 @@ export default function Dashboard({ auth, clients, allUsers }) {
             });
         }
     };
+
+    // Toggle User Status Action
+    const handleToggleUserStatus = (userToToggle) => {
+        router.post(route('users.toggle-status', userToToggle.id), {}, {
+            onSuccess: () => router.reload()
+        });
+    };
+
+    // Pegawai CRUD Actions
+    const handleAddPegawaiSubmit = (e) => {
+        e.preventDefault();
+        router.post(route('pegawai.store'), {
+            name: pegName,
+            inisial: pegInisial,
+            jabatan: pegJabatan,
+            telp: pegTelp,
+            alamat: pegAlamat,
+            cv: pegCv,
+            status: pegStatus,
+        }, {
+            onSuccess: () => {
+                setShowAddPegawaiModal(false);
+                setPegName('');
+                setPegInisial('');
+                setPegJabatan('staff');
+                setPegTelp('');
+                setPegAlamat('');
+                setPegCv('');
+                setPegStatus('aktif');
+            }
+        });
+    };
+
+    const handleOpenEditPegawai = (pegToEdit) => {
+        setEditPegawaiData(pegToEdit);
+        setEditPegName(pegToEdit.name);
+        setEditPegInisial(pegToEdit.inisial || '');
+        setEditPegJabatan(pegToEdit.jabatan);
+        setEditPegTelp(pegToEdit.telp || '');
+        setEditPegAlamat(pegToEdit.alamat || '');
+        setEditPegCv(pegToEdit.cv || '');
+        setEditPegStatus(pegToEdit.status);
+        setShowEditPegawaiModal(true);
+    };
+
+    const handleEditPegawaiSubmit = (e) => {
+        e.preventDefault();
+        router.post(route('pegawai.update', editPegawaiData.id), {
+            name: editPegName,
+            inisial: editPegInisial,
+            jabatan: editPegJabatan,
+            telp: editPegTelp,
+            alamat: editPegAlamat,
+            cv: editPegCv,
+            status: editPegStatus,
+        }, {
+            onSuccess: () => {
+                setShowEditPegawaiModal(false);
+                setEditPegawaiData(null);
+                setEditPegName('');
+                setEditPegInisial('');
+                setEditPegJabatan('staff');
+                setEditPegTelp('');
+                setEditPegAlamat('');
+                setEditPegCv('');
+                setEditPegStatus('aktif');
+            }
+        });
+    };
+
+    const handleDeletePegawai = (pegToDelete) => {
+        if (confirm(`Apakah Anda yakin ingin menghapus data pegawai ${pegToDelete.name}?`)) {
+            router.delete(route('pegawai.destroy', pegToDelete.id), {
+                onSuccess: () => router.reload()
+            });
+        }
+    };
+
+    const handleApprovePegawai = (pegToApprove) => {
+        if (confirm(`Apakah Anda yakin ingin menyetujui pegawai ${pegToApprove.name}?`)) {
+            router.post(route('pegawai.approve', pegToApprove.id), {}, {
+                onSuccess: () => router.reload()
+            });
+        }
+    };
+
+    const handleRejectPegawai = (pegToReject) => {
+        if (confirm(`Apakah Anda yakin ingin menolak pegawai ${pegToReject.name}?`)) {
+            router.post(route('pegawai.reject', pegToReject.id), {}, {
+                onSuccess: () => router.reload()
+            });
+        }
+    };
+
 
     // Helper for rendering badges
     const renderStatusBadge = (status) => {
@@ -676,68 +793,231 @@ export default function Dashboard({ auth, clients, allUsers }) {
                             </div>
                         </div>
                     ) : activeTab === 'users' ? (
-                        /* ================== TAB 2 (ADMIN): USER MANAGEMENT ================== */
-                        <div className="glass-panel rounded-2xl overflow-hidden bg-white">
-                            <div className="p-6 border-b border-neutral-100 flex justify-between items-center">
-                                <div>
-                                    <h3 className="text-lg font-bold text-[#1d1d1f]">Daftar Pengguna Sistem</h3>
-                                    <p className="text-neutral-500 text-xs mt-1">Daftar pengguna terdaftar dan hak akses role masing-masing.</p>
-                                </div>
+                        /* ================== TAB 2 (ADMIN): USER & PEGAWAI MANAGEMENT ================== */
+                        <div className="space-y-6">
+                            {/* Segmented Control */}
+                            <div className="flex bg-neutral-100 p-1 rounded-xl max-w-md gap-1 bg-white border border-neutral-200">
                                 <button
-                                    onClick={() => setShowAddUserModal(true)}
-                                    className="btn-glow-indigo text-xs font-semibold px-4 py-2.5 rounded-xl flex items-center gap-2"
+                                    type="button"
+                                    onClick={() => setUserSubTab('users')}
+                                    className={`flex-1 py-2 px-4 text-xs font-bold rounded-lg transition-all duration-200 ${
+                                        userSubTab === 'users'
+                                            ? 'bg-neutral-900 text-white shadow-sm'
+                                            : 'text-neutral-500 hover:text-neutral-800'
+                                    }`}
                                 >
-                                    Daftarkan User Baru
+                                    Kelola Akun User
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setUserSubTab('pegawai')}
+                                    className={`flex-1 py-2 px-4 text-xs font-bold rounded-lg transition-all duration-200 ${
+                                        userSubTab === 'pegawai'
+                                            ? 'bg-neutral-900 text-white shadow-sm'
+                                            : 'text-neutral-500 hover:text-neutral-800'
+                                    }`}
+                                >
+                                    Kelola Data Pegawai
                                 </button>
                             </div>
 
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-left border-collapse">
-                                    <thead>
-                                        <tr className="border-b border-neutral-200 text-xs text-neutral-500 bg-neutral-50/80 font-bold uppercase tracking-wider text-[10px]">
-                                            <th className="py-4 px-6">NAMA</th>
-                                            <th className="py-4 px-6">INISIAL</th>
-                                            <th className="py-4 px-6">EMAIL</th>
-                                            <th className="py-4 px-6">ROLE SISTEM</th>
-                                            <th className="py-4 px-6 text-right">AKSI</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-neutral-100 text-sm text-neutral-750">
-                                        {allUsers.map((u) => (
-                                            <tr key={u.id} className="hover:bg-neutral-50/30">
-                                                <td className="py-4 px-6 font-bold text-neutral-900">{u.name}</td>
-                                                <td className="py-4 px-6"><span className="bg-neutral-100 px-2 py-0.5 rounded font-extrabold text-xs text-neutral-600">{u.inisial || '-'}</span></td>
-                                                <td className="py-4 px-6 text-neutral-600 font-semibold">{u.email}</td>
-                                                <td className="py-4 px-6">
-                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border bg-blue-50 text-[#0071e3] border-blue-100 uppercase tracking-wider text-[9px]">
-                                                        {u.role}
-                                                    </span>
-                                                </td>
-                                                <td className="py-4 px-6 text-right">
-                                                    <div className="flex justify-end gap-1.5">
-                                                        <button
-                                                            onClick={() => handleOpenEditUser(u)}
-                                                            className="px-2.5 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-lg transition text-xs font-bold"
-                                                        >
-                                                            Edit
-                                                        </button>
-                                                        {u.id !== user.id ? (
-                                                            <button
-                                                                onClick={() => handleDeleteUser(u)}
-                                                                className="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition text-xs font-bold border border-red-200/40"
-                                                            >
-                                                                Hapus
-                                                            </button>
-                                                        ) : (
-                                                            <span className="text-xs text-neutral-400 font-medium italic self-center px-1">Akun Anda</span>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                            {userSubTab === 'users' ? (
+                                <div className="glass-panel rounded-2xl overflow-hidden bg-white">
+                                    <div className="p-6 border-b border-neutral-100 flex justify-between items-center">
+                                        <div>
+                                            <h3 className="text-lg font-bold text-[#1d1d1f]">Daftar Pengguna Sistem</h3>
+                                            <p className="text-neutral-500 text-xs mt-1">Daftar akun login pengguna dan hak akses role masing-masing.</p>
+                                        </div>
+                                        {user?.role === 'admin' && (
+                                            <button
+                                                onClick={() => setShowAddUserModal(true)}
+                                                className="btn-glow-indigo text-xs font-semibold px-4 py-2.5 rounded-xl flex items-center gap-2"
+                                            >
+                                                Daftarkan User Baru
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-left border-collapse">
+                                            <thead>
+                                                <tr className="border-b border-neutral-200 text-xs text-neutral-500 bg-neutral-50/80 font-bold uppercase tracking-wider text-[10px]">
+                                                    <th className="py-4 px-6">NAMA</th>
+                                                    <th className="py-4 px-6">INISIAL</th>
+                                                    <th className="py-4 px-6">EMAIL</th>
+                                                    <th className="py-4 px-6">ROLE SISTEM</th>
+                                                    <th className="py-4 px-6">STATUS LOGIN</th>
+                                                    <th className="py-4 px-6 text-right">AKSI</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-neutral-100 text-sm text-neutral-750">
+                                                {allUsers.map((u) => (
+                                                    <tr key={u.id} className="hover:bg-neutral-50/30">
+                                                        <td className="py-4 px-6 font-bold text-neutral-900">{u.name || '-'}</td>
+                                                        <td className="py-4 px-6"><span className="bg-neutral-100 px-2 py-0.5 rounded font-extrabold text-xs text-neutral-600">{u.inisial || '-'}</span></td>
+                                                        <td className="py-4 px-6 text-neutral-600 font-semibold">{u.email}</td>
+                                                        <td className="py-4 px-6">
+                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border bg-blue-50 text-[#0071e3] border-blue-100 uppercase tracking-wider text-[9px]">
+                                                                {u.role}
+                                                            </span>
+                                                        </td>
+                                                        <td className="py-4 px-6">
+                                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${u.is_active ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-600 border-red-200'}`}>
+                                                                {u.is_active ? 'Aktif' : 'Nonaktif'}
+                                                            </span>
+                                                        </td>
+                                                        <td className="py-4 px-6 text-right">
+                                                            {user?.role === 'admin' ? (
+                                                                <div className="flex justify-end gap-1.5">
+                                                                    {u.id !== user?.id && (
+                                                                        <button
+                                                                            onClick={() => handleToggleUserStatus(u)}
+                                                                            className={`px-2.5 py-1.5 rounded-lg transition text-xs font-bold ${u.is_active ? 'bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200' : 'bg-green-50 hover:bg-green-100 text-green-700 border border-green-200'}`}
+                                                                        >
+                                                                            {u.is_active ? 'Nonaktifkan' : 'Aktifkan'}
+                                                                        </button>
+                                                                    )}
+                                                                    <button
+                                                                        onClick={() => handleOpenEditUser(u)}
+                                                                        className="px-2.5 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-lg transition text-xs font-bold border border-neutral-200/50"
+                                                                    >
+                                                                        Edit
+                                                                    </button>
+                                                                    {u.id !== user?.id ? (
+                                                                        <button
+                                                                            onClick={() => handleDeleteUser(u)}
+                                                                            className="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition text-xs font-bold border border-red-200/40"
+                                                                        >
+                                                                            Hapus
+                                                                        </button>
+                                                                    ) : (
+                                                                        <span className="text-xs text-neutral-400 font-medium italic self-center px-1">Akun Anda</span>
+                                                                    )}
+                                                                </div>
+                                                            ) : (
+                                                                <span className="text-xs text-neutral-400 font-medium italic">Hanya Admin</span>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="glass-panel rounded-2xl overflow-hidden bg-white animate-fade-in-up">
+                                    <div className="p-6 border-b border-neutral-100 flex justify-between items-center">
+                                        <div>
+                                            <h3 className="text-lg font-bold text-[#1d1d1f]">Database Pegawai</h3>
+                                            <p className="text-neutral-500 text-xs mt-1">Kelola data seluruh pegawai kantor akuntan publik.</p>
+                                        </div>
+                                        {user?.role === 'admin' && (
+                                            <button
+                                                onClick={() => setShowAddPegawaiModal(true)}
+                                                className="btn-glow-indigo text-xs font-semibold px-4 py-2.5 rounded-xl flex items-center gap-2"
+                                            >
+                                                Tambah Pegawai Baru
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-left border-collapse">
+                                            <thead>
+                                                <tr className="border-b border-neutral-200 text-xs text-neutral-500 bg-neutral-50/80 font-bold uppercase tracking-wider text-[10px]">
+                                                    <th className="py-4 px-6">NAMA</th>
+                                                    <th className="py-4 px-6">INISIAL</th>
+                                                    <th className="py-4 px-6">JABATAN</th>
+                                                    <th className="py-4 px-6">TELP / ALAMAT</th>
+                                                    <th className="py-4 px-6">STATUS KERJA</th>
+                                                    <th className="py-4 px-6">AKUN USER</th>
+                                                    <th className="py-4 px-6 text-right">AKSI</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-neutral-100 text-sm text-neutral-750">
+                                                {allPegawai.map((p) => (
+                                                    <tr key={p.id} className="hover:bg-neutral-50/30">
+                                                        <td className="py-4 px-6 font-bold text-neutral-900">{p.name}</td>
+                                                        <td className="py-4 px-6"><span className="bg-neutral-100 px-2 py-0.5 rounded font-extrabold text-xs text-neutral-600">{p.inisial}</span></td>
+                                                        <td className="py-4 px-6 capitalize">{p.jabatan}</td>
+                                                        <td className="py-4 px-6 text-xs text-neutral-650 space-y-0.5">
+                                                            <div>Telp: {p.telp || '-'}</div>
+                                                            <div className="max-w-[200px] truncate" title={p.alamat}>Alamat: {p.alamat || '-'}</div>
+                                                        </td>
+                                                        <td className="py-4 px-6">
+                                                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${
+                                                                p.status === 'aktif' ? 'bg-green-50 text-green-700 border-green-200' : 
+                                                                p.status === 'cuti' ? 'bg-amber-50 text-amber-700 border-amber-200' : 
+                                                                p.status === 'pending' ? 'bg-orange-50 text-orange-700 border-orange-200' :
+                                                                'bg-neutral-100 text-neutral-600 border-neutral-200'
+                                                            }`}>
+                                                                {p.status === 'pending' ? 'Menunggu Persetujuan' : p.status}
+                                                            </span>
+                                                        </td>
+                                                        <td className="py-4 px-6">
+                                                            {p.has_user ? (
+                                                                <span className="inline-flex items-center gap-1.5 text-xs text-emerald-600 font-bold bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">
+                                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                                                    Terhubung ({p.user_email})
+                                                                </span>
+                                                            ) : (
+                                                                <span className="inline-flex items-center gap-1.5 text-xs text-neutral-500 font-semibold bg-neutral-50 px-2.5 py-1 rounded-full border border-neutral-200/50">
+                                                                    Belum Terhubung
+                                                                </span>
+                                                            )}
+                                                        </td>
+                                                        <td className="py-4 px-6 text-right">
+                                                            {p.status === 'pending' ? (
+                                                                user?.role === 'partner' ? (
+                                                                    <div className="flex justify-end gap-1.5">
+                                                                        <button
+                                                                            onClick={() => handleApprovePegawai(p)}
+                                                                            className="px-2.5 py-1.5 bg-green-50 hover:bg-green-100 text-green-700 rounded-lg transition text-xs font-bold border border-green-200"
+                                                                        >
+                                                                            Setujui
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => handleRejectPegawai(p)}
+                                                                            className="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition text-xs font-bold border border-red-200/40"
+                                                                        >
+                                                                            Tolak
+                                                                        </button>
+                                                                    </div>
+                                                                ) : (
+                                                                    <span className="inline-flex items-center gap-1.5 text-xs text-amber-600 font-semibold bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200 whitespace-nowrap">
+                                                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                                                                        Menunggu Persetujuan Partner
+                                                                    </span>
+                                                                )
+                                                            ) : (
+                                                                user?.role === 'admin' ? (
+                                                                    <div className="flex justify-end gap-1.5">
+                                                                        <button
+                                                                            onClick={() => handleOpenEditPegawai(p)}
+                                                                            className="px-2.5 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-lg transition text-xs font-bold border border-neutral-200/50"
+                                                                        >
+                                                                            Edit
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => handleDeletePegawai(p)}
+                                                                            disabled={p.user_id === user?.id}
+                                                                            className="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition text-xs font-bold border border-red-200/40 disabled:opacity-40 disabled:hover:bg-red-50 disabled:hover:text-red-600"
+                                                                        >
+                                                                            Hapus
+                                                                        </button>
+                                                                    </div>
+                                                                ) : (
+                                                                    <span className="text-xs text-neutral-400 font-medium italic">Hanya Admin</span>
+                                                                )
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     ) : (
                         /* ================== TAB 1: LIST CLIENTS/PERIKATAN ================== */
@@ -746,10 +1026,10 @@ export default function Dashboard({ auth, clients, allUsers }) {
                                 <div>
                                     <h3 className="text-lg font-bold text-[#1d1d1f]">Daftar Klien / Perikatan Audit</h3>
                                     <p className="text-neutral-500 text-xs mt-1">
-                                        {user.role === 'admin' ? 'Daftar perikatan untuk kelola data CRUD perikatan klien.' : 'Daftar perikatan aktif tempat Anda ditugaskan.'}
+                                        {user?.role === 'admin' ? 'Daftar perikatan untuk kelola data CRUD perikatan klien.' : 'Daftar perikatan aktif tempat Anda ditugaskan.'}
                                     </p>
                                 </div>
-                                {user.role === 'admin' && (
+                                {user?.role === 'admin' && (
                                     <button
                                         onClick={() => setShowAddClientModal(true)}
                                         className="btn-glow-indigo text-xs font-semibold px-4 py-2.5 rounded-xl flex items-center gap-2"
@@ -803,7 +1083,7 @@ export default function Dashboard({ auth, clients, allUsers }) {
                                                         </td>
                                                         <td className="py-4 px-6 text-right">
                                                             <div className="flex justify-end gap-1.5">
-                                                                {user.role === 'admin' && (
+                                                                {user?.role === 'admin' && (
                                                                     <>
                                                                         <button
                                                                             onClick={() => handleOpenEditClient(client)}
@@ -819,7 +1099,7 @@ export default function Dashboard({ auth, clients, allUsers }) {
                                                                         </button>
                                                                     </>
                                                                 )}
-                                                                {user.role === 'partner' && (
+                                                                {user?.role === 'partner' && (
                                                                     <button
                                                                         onClick={() => handleOpenTeamModal(client)}
                                                                         className="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-lg transition text-xs font-bold border border-indigo-100"
@@ -1274,74 +1554,101 @@ export default function Dashboard({ auth, clients, allUsers }) {
             {/* Admin Add User Modal */}
             {showAddUserModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-900/40 backdrop-blur-sm p-4">
-                    <div className="glass-panel w-full max-w-md p-6 rounded-2xl animate-fade-in-up border border-neutral-200 bg-white">
-                        <h3 className="text-lg font-bold text-[#1d1d1f] mb-2">Daftarkan Pengguna Baru</h3>
-                        <p className="text-neutral-500 text-xs mb-4">Buat akun untuk staf atau manajemen baru agar mereka dapat mengakses perikatan.</p>
+                    <div className="glass-panel w-full max-w-md rounded-2xl animate-fade-in-up border border-neutral-200 bg-white max-h-[90vh] flex flex-col overflow-hidden">
+                        <form onSubmit={handleAddUserSubmit} className="flex flex-col max-h-[90vh] min-h-0">
+                            {/* Header */}
+                            <div className="p-6 pb-4 border-b border-neutral-100 shrink-0">
+                                <h3 className="text-lg font-bold text-[#1d1d1f] mb-1">Daftarkan Pengguna Baru</h3>
+                                <p className="text-neutral-500 text-xs">Buat akun untuk staf atau manajemen baru agar mereka dapat mengakses perikatan.</p>
+                            </div>
 
-                        <form onSubmit={handleAddUserSubmit} className="space-y-4">
-                            <div>
-                                <label className="block text-xs text-neutral-500 font-semibold mb-1">NAMA LENGKAP</label>
-                                <input
-                                    type="text"
-                                    value={usrName}
-                                    onChange={(e) => setUsrName(e.target.value)}
-                                    placeholder="Contoh: Andi Wijaya"
-                                    className="w-full custom-input p-3 text-xs"
-                                    required
-                                />
+                            {/* Scrollable Body */}
+                            <div className="flex-1 overflow-y-auto p-6 space-y-4 min-h-0">
+                                <div>
+                                    <label className="block text-xs text-neutral-500 font-semibold mb-1">HUBUNGKAN KE PEGAWAI</label>
+                                    <select
+                                        value={selectedPegawaiId}
+                                        onChange={(e) => setSelectedPegawaiId(e.target.value)}
+                                        className="w-full custom-input p-2.5 text-xs"
+                                    >
+                                        <option value="new">-- Buat Pegawai Baru --</option>
+                                        {allPegawai.filter(p => !p.has_user).map(p => (
+                                            <option key={p.id} value={p.id}>{p.name} ({p.inisial} - {p.jabatan.toUpperCase()})</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {selectedPegawaiId === 'new' && (
+                                    <>
+                                        <div>
+                                            <label className="block text-xs text-neutral-500 font-semibold mb-1">NAMA LENGKAP PEGAWAI</label>
+                                            <input
+                                                type="text"
+                                                value={usrName}
+                                                onChange={(e) => setUsrName(e.target.value)}
+                                                placeholder="Contoh: Andi Wijaya"
+                                                className="w-full custom-input p-3 text-xs"
+                                                required
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs text-neutral-500 font-semibold mb-1">INISIAL PENGGUNA</label>
+                                            <input
+                                                type="text"
+                                                value={usrInisial}
+                                                onChange={(e) => setUsrInisial(e.target.value.toUpperCase())}
+                                                placeholder="Contoh: AND"
+                                                maxLength={3}
+                                                className="w-full custom-input p-3 text-xs uppercase"
+                                                required
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs text-neutral-500 font-semibold mb-1">ROLE SISTEM (JABATAN)</label>
+                                            <select
+                                                value={usrRole}
+                                                onChange={(e) => setUsrRole(e.target.value)}
+                                                className="w-full custom-input p-2.5 text-xs"
+                                            >
+                                                <option value="staff">Staff</option>
+                                                <option value="manager">Manager</option>
+                                                <option value="partner">Partner</option>
+                                                <option value="admin">Admin</option>
+                                            </select>
+                                        </div>
+                                    </>
+                                )}
+
+                                <div>
+                                    <label className="block text-xs text-neutral-500 font-semibold mb-1">ALAMAT EMAIL AKUN</label>
+                                    <input
+                                        type="email"
+                                        value={usrEmail}
+                                        onChange={(e) => setUsrEmail(e.target.value)}
+                                        placeholder="Contoh: andi@example.com"
+                                        className="w-full custom-input p-3 text-xs"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-neutral-500 font-semibold mb-1">KATA SANDI</label>
+                                    <input
+                                        type="password"
+                                        value={usrPassword}
+                                        onChange={(e) => setUsrPassword(e.target.value)}
+                                        placeholder="Minimal 8 karakter..."
+                                        className="w-full custom-input p-3 text-xs"
+                                        required
+                                    />
+                                </div>
                             </div>
-                            <div>
-                                <label className="block text-xs text-neutral-500 font-semibold mb-1">INISIAL PENGGUNA</label>
-                                <input
-                                    type="text"
-                                    value={usrInisial}
-                                    onChange={(e) => setUsrInisial(e.target.value.toUpperCase())}
-                                    placeholder="Contoh: AND"
-                                    maxLength={3}
-                                    className="w-full custom-input p-3 text-xs uppercase"
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs text-neutral-500 font-semibold mb-1">ALAMAT EMAIL</label>
-                                <input
-                                    type="email"
-                                    value={usrEmail}
-                                    onChange={(e) => setUsrEmail(e.target.value)}
-                                    placeholder="Contoh: andi@example.com"
-                                    className="w-full custom-input p-3 text-xs"
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs text-neutral-500 font-semibold mb-1">KATA SANDI</label>
-                                <input
-                                    type="password"
-                                    value={usrPassword}
-                                    onChange={(e) => setUsrPassword(e.target.value)}
-                                    placeholder="Minimal 8 karakter..."
-                                    className="w-full custom-input p-3 text-xs"
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs text-neutral-500 font-semibold mb-1">ROLE SISTEM</label>
-                                <select
-                                    value={usrRole}
-                                    onChange={(e) => setUsrRole(e.target.value)}
-                                    className="w-full custom-input p-2.5 text-xs"
-                                >
-                                    <option value="staff">Staff</option>
-                                    <option value="manager">Manager</option>
-                                    <option value="partner">Partner</option>
-                                    <option value="admin">Admin</option>
-                                </select>
-                            </div>
-                            <div className="flex justify-end gap-3 pt-4 border-t border-neutral-100">
+
+                            {/* Footer */}
+                            <div className="p-6 pt-4 border-t border-neutral-100 bg-neutral-50/50 flex justify-end gap-3 shrink-0 rounded-b-2xl">
                                 <button
                                     type="button"
                                     onClick={() => setShowAddUserModal(false)}
-                                    className="px-4 py-2 border border-neutral-200 text-neutral-600 rounded-lg hover:bg-neutral-50 text-xs transition"
+                                    className="px-4 py-2 border border-neutral-200 text-neutral-600 rounded-lg hover:bg-neutral-50 text-xs font-bold transition"
                                 >
                                     Batal
                                 </button>
@@ -1360,76 +1667,281 @@ export default function Dashboard({ auth, clients, allUsers }) {
             {/* Admin Edit User Modal */}
             {showEditUserModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-900/40 backdrop-blur-sm p-4">
-                    <div className="glass-panel w-full max-w-md p-6 rounded-2xl animate-fade-in-up border border-neutral-200 bg-white">
-                        <h3 className="text-lg font-bold text-[#1d1d1f] mb-2">Edit Pengguna</h3>
-                        <p className="text-neutral-500 text-xs mb-4">Ubah detail akun atau hak akses untuk {editUserData?.name}.</p>
+                    <div className="glass-panel w-full max-w-md rounded-2xl animate-fade-in-up border border-neutral-200 bg-white max-h-[90vh] flex flex-col overflow-hidden">
+                        <form onSubmit={handleEditUserSubmit} className="flex flex-col max-h-[90vh] min-h-0">
+                            {/* Header */}
+                            <div className="p-6 pb-4 border-b border-neutral-100 shrink-0">
+                                <h3 className="text-lg font-bold text-[#1d1d1f] mb-1">Edit Pengguna</h3>
+                                <p className="text-neutral-500 text-xs">Ubah detail akun atau hak akses login.</p>
+                            </div>
 
-                        <form onSubmit={handleEditUserSubmit} className="space-y-4">
-                            <div>
-                                <label className="block text-xs text-neutral-500 font-semibold mb-1">NAMA LENGKAP</label>
-                                <input
-                                    type="text"
-                                    value={editUsrName}
-                                    onChange={(e) => setEditUsrName(e.target.value)}
-                                    placeholder="Contoh: Andi Wijaya"
-                                    className="w-full custom-input p-3 text-xs"
-                                    required
-                                />
+                            {/* Scrollable Body */}
+                            <div className="flex-1 overflow-y-auto p-6 space-y-4 min-h-0">
+                                <div>
+                                    <label className="block text-xs text-neutral-500 font-semibold mb-1">ALAMAT EMAIL</label>
+                                    <input
+                                        type="email"
+                                        value={editUsrEmail}
+                                        onChange={(e) => setEditUsrEmail(e.target.value)}
+                                        placeholder="Contoh: andi@example.com"
+                                        className="w-full custom-input p-3 text-xs"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-neutral-500 font-semibold mb-1">KATA SANDI BARU</label>
+                                    <input
+                                        type="password"
+                                        value={editUsrPassword}
+                                        onChange={(e) => setEditUsrPassword(e.target.value)}
+                                        placeholder="Kosongkan jika tidak ingin diubah..."
+                                        className="w-full custom-input p-3 text-xs"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-neutral-500 font-semibold mb-1">STATUS LOGIN</label>
+                                    <select
+                                        value={editUsrIsActive ? '1' : '0'}
+                                        onChange={(e) => setEditUsrIsActive(e.target.value === '1')}
+                                        className="w-full custom-input p-2.5 text-xs"
+                                    >
+                                        <option value="1">Aktif (Bisa Login)</option>
+                                        <option value="0">Nonaktif (Blokir Login)</option>
+                                    </select>
+                                </div>
                             </div>
-                            <div>
-                                <label className="block text-xs text-neutral-500 font-semibold mb-1">INISIAL PENGGUNA</label>
-                                <input
-                                    type="text"
-                                    value={editUsrInisial}
-                                    onChange={(e) => setEditUsrInisial(e.target.value.toUpperCase())}
-                                    placeholder="Contoh: AND"
-                                    maxLength={3}
-                                    className="w-full custom-input p-3 text-xs uppercase"
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs text-neutral-500 font-semibold mb-1">ALAMAT EMAIL</label>
-                                <input
-                                    type="email"
-                                    value={editUsrEmail}
-                                    onChange={(e) => setEditUsrEmail(e.target.value)}
-                                    placeholder="Contoh: andi@example.com"
-                                    className="w-full custom-input p-3 text-xs"
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs text-neutral-500 font-semibold mb-1">KATA SANDI BARU</label>
-                                <input
-                                    type="password"
-                                    value={editUsrPassword}
-                                    onChange={(e) => setEditUsrPassword(e.target.value)}
-                                    placeholder="Kosongkan jika tidak ingin diubah..."
-                                    className="w-full custom-input p-3 text-xs"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs text-neutral-500 font-semibold mb-1">ROLE SISTEM</label>
-                                <select
-                                    value={editUsrRole}
-                                    onChange={(e) => setEditUsrRole(e.target.value)}
-                                    className="w-full custom-input p-2.5 text-xs"
-                                >
-                                    <option value="staff">Staff</option>
-                                    <option value="manager">Manager</option>
-                                    <option value="partner">Partner</option>
-                                    <option value="admin">Admin</option>
-                                </select>
-                            </div>
-                            <div className="flex justify-end gap-3 pt-4 border-t border-neutral-100">
+
+                            {/* Footer */}
+                            <div className="p-6 pt-4 border-t border-neutral-100 bg-neutral-50/50 flex justify-end gap-3 shrink-0 rounded-b-2xl">
                                 <button
                                     type="button"
                                     onClick={() => {
                                         setShowEditUserModal(false);
                                         setEditUserData(null);
                                     }}
-                                    className="px-4 py-2 border border-neutral-200 text-neutral-600 rounded-lg hover:bg-neutral-50 text-xs transition"
+                                    className="px-4 py-2 border border-neutral-200 text-neutral-600 rounded-lg hover:bg-neutral-50 text-xs font-bold transition"
+                                >
+                                    Batal
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="btn-glow-indigo text-xs font-semibold px-4 py-2 rounded-lg"
+                                >
+                                    Simpan Perubahan
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Admin Add Pegawai Modal */}
+            {showAddPegawaiModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-900/40 backdrop-blur-sm p-4">
+                    <div className="glass-panel w-full max-w-md rounded-2xl animate-fade-in-up border border-neutral-200 bg-white max-h-[90vh] flex flex-col overflow-hidden">
+                        <form onSubmit={handleAddPegawaiSubmit} className="flex flex-col max-h-[90vh] min-h-0">
+                            {/* Header */}
+                            <div className="p-6 pb-4 border-b border-neutral-100 shrink-0">
+                                <h3 className="text-lg font-bold text-[#1d1d1f] mb-1">Tambah Pegawai Baru</h3>
+                                <p className="text-neutral-500 text-xs">Tambahkan data profil pegawai baru ke database sistem.</p>
+                            </div>
+
+                            {/* Scrollable Body */}
+                            <div className="flex-1 overflow-y-auto p-6 space-y-4 min-h-0">
+                                <div>
+                                    <label className="block text-xs text-neutral-500 font-semibold mb-1">NAMA LENGKAP</label>
+                                    <input
+                                        type="text"
+                                        value={pegName}
+                                        onChange={(e) => setPegName(e.target.value)}
+                                        placeholder="Contoh: Budi Susanto"
+                                        className="w-full custom-input p-3 text-xs"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-neutral-500 font-semibold mb-1">INISIAL</label>
+                                    <input
+                                        type="text"
+                                        value={pegInisial}
+                                        onChange={(e) => setPegInisial(e.target.value.toUpperCase())}
+                                        placeholder="Contoh: BUD"
+                                        maxLength={3}
+                                        className="w-full custom-input p-3 text-xs uppercase"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-neutral-500 font-semibold mb-1">JABATAN</label>
+                                    <select
+                                        value={pegJabatan}
+                                        onChange={(e) => setPegJabatan(e.target.value)}
+                                        className="w-full custom-input p-2.5 text-xs"
+                                    >
+                                        <option value="staff">Staff</option>
+                                        <option value="manager">Manager</option>
+                                        <option value="partner">Partner</option>
+                                        <option value="admin">Admin</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-neutral-500 font-semibold mb-1">NO. TELEPON</label>
+                                    <input
+                                        type="text"
+                                        value={pegTelp}
+                                        onChange={(e) => setPegTelp(e.target.value)}
+                                        placeholder="Contoh: 08123456789"
+                                        className="w-full custom-input p-3 text-xs"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-neutral-500 font-semibold mb-1">ALAMAT</label>
+                                    <textarea
+                                        value={pegAlamat}
+                                        onChange={(e) => setPegAlamat(e.target.value)}
+                                        placeholder="Alamat lengkap..."
+                                        className="w-full custom-input p-3 text-xs h-20"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-neutral-500 font-semibold mb-1">RINGKASAN CV</label>
+                                    <textarea
+                                        value={pegCv}
+                                        onChange={(e) => setPegCv(e.target.value)}
+                                        placeholder="Pengalaman kerja singkat..."
+                                        className="w-full custom-input p-3 text-xs h-20"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-neutral-500 font-semibold mb-1">STATUS PEGAWAI</label>
+                                    <select
+                                        value={pegStatus}
+                                        onChange={(e) => setPegStatus(e.target.value)}
+                                        className="w-full custom-input p-2.5 text-xs"
+                                    >
+                                        <option value="aktif">Aktif</option>
+                                        <option value="cuti">Cuti</option>
+                                        <option value="nonaktif">Nonaktif</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* Footer */}
+                            <div className="p-6 pt-4 border-t border-neutral-100 bg-neutral-50/50 flex justify-end gap-3 shrink-0 rounded-b-2xl">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAddPegawaiModal(false)}
+                                    className="px-4 py-2 border border-neutral-200 text-neutral-600 rounded-lg hover:bg-neutral-50 text-xs font-bold transition"
+                                >
+                                    Batal
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="btn-glow-indigo text-xs font-semibold px-4 py-2 rounded-lg"
+                                >
+                                    Simpan Pegawai
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Admin Edit Pegawai Modal */}
+            {showEditPegawaiModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-900/40 backdrop-blur-sm p-4">
+                    <div className="glass-panel w-full max-w-md rounded-2xl animate-fade-in-up border border-neutral-200 bg-white max-h-[90vh] flex flex-col overflow-hidden">
+                         <form onSubmit={handleEditPegawaiSubmit} className="flex flex-col max-h-[90vh] min-h-0">
+                            {/* Header */}
+                            <div className="p-6 pb-4 border-b border-neutral-100 shrink-0">
+                                <h3 className="text-lg font-bold text-[#1d1d1f] mb-1">Edit Pegawai</h3>
+                                <p className="text-neutral-500 text-xs">Perbarui data profil pegawai.</p>
+                            </div>
+
+                            {/* Scrollable Body */}
+                            <div className="flex-1 overflow-y-auto p-6 space-y-4 min-h-0">
+                                <div>
+                                    <label className="block text-xs text-neutral-500 font-semibold mb-1">NAMA LENGKAP</label>
+                                    <input
+                                        type="text"
+                                        value={editPegName}
+                                        onChange={(e) => setEditPegName(e.target.value)}
+                                        className="w-full custom-input p-3 text-xs"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-neutral-500 font-semibold mb-1">INISIAL</label>
+                                    <input
+                                        type="text"
+                                        value={editPegInisial}
+                                        onChange={(e) => setEditPegInisial(e.target.value.toUpperCase())}
+                                        maxLength={3}
+                                        className="w-full custom-input p-3 text-xs uppercase"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-neutral-500 font-semibold mb-1">JABATAN</label>
+                                    <select
+                                        value={editPegJabatan}
+                                        onChange={(e) => setEditPegJabatan(e.target.value)}
+                                        className="w-full custom-input p-2.5 text-xs"
+                                    >
+                                        <option value="staff">Staff</option>
+                                        <option value="manager">Manager</option>
+                                        <option value="partner">Partner</option>
+                                        <option value="admin">Admin</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-neutral-500 font-semibold mb-1">NO. TELEPON</label>
+                                    <input
+                                        type="text"
+                                        value={editPegTelp}
+                                        onChange={(e) => setEditPegTelp(e.target.value)}
+                                        className="w-full custom-input p-3 text-xs"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-neutral-500 font-semibold mb-1">ALAMAT</label>
+                                    <textarea
+                                        value={editPegAlamat}
+                                        onChange={(e) => setEditPegAlamat(e.target.value)}
+                                        className="w-full custom-input p-3 text-xs h-20"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-neutral-500 font-semibold mb-1">RINGKASAN CV</label>
+                                    <textarea
+                                        value={editPegCv}
+                                        onChange={(e) => setEditPegCv(e.target.value)}
+                                        className="w-full custom-input p-3 text-xs h-20"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-neutral-500 font-semibold mb-1">STATUS PEGAWAI</label>
+                                    <select
+                                        value={editPegStatus}
+                                        onChange={(e) => setEditPegStatus(e.target.value)}
+                                        className="w-full custom-input p-2.5 text-xs"
+                                    >
+                                        <option value="aktif">Aktif</option>
+                                        <option value="cuti">Cuti</option>
+                                        <option value="nonaktif">Nonaktif</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* Footer */}
+                            <div className="p-6 pt-4 border-t border-neutral-100 bg-neutral-50/50 flex justify-end gap-3 shrink-0 rounded-b-2xl">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowEditPegawaiModal(false);
+                                        setEditPegawaiData(null);
+                                    }}
+                                    className="px-4 py-2 border border-neutral-200 text-neutral-600 rounded-lg hover:bg-neutral-50 text-xs font-bold transition"
                                 >
                                     Batal
                                 </button>

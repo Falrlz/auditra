@@ -28,7 +28,13 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:admin')->group(function () {
         Route::post('/users', [\App\Http\Controllers\UserController::class, 'store'])->name('users.store');
         Route::post('/users/{user}', [\App\Http\Controllers\UserController::class, 'update'])->name('users.update');
+        Route::post('/users/{user}/toggle-status', [\App\Http\Controllers\UserController::class, 'toggleStatus'])->name('users.toggle-status');
         Route::delete('/users/{user}', [\App\Http\Controllers\UserController::class, 'destroy'])->name('users.destroy');
+
+        Route::post('/pegawai', [\App\Http\Controllers\PegawaiController::class, 'store'])->name('pegawai.store');
+        Route::post('/pegawai/{pegawai}', [\App\Http\Controllers\PegawaiController::class, 'update'])->name('pegawai.update');
+        Route::delete('/pegawai/{pegawai}', [\App\Http\Controllers\PegawaiController::class, 'destroy'])->name('pegawai.destroy');
+
         Route::post('/clients', [AuditFormController::class, 'storeClient'])->name('clients.store');
         Route::post('/clients/{client}', [AuditFormController::class, 'updateClient'])->name('clients.update');
         Route::delete('/clients/{client}', [AuditFormController::class, 'destroyClient'])->name('clients.destroy');
@@ -37,6 +43,8 @@ Route::middleware('auth')->group(function () {
     // Partner routes
     Route::middleware('role:partner')->group(function () {
         Route::post('/clients/{client}/team', [AuditFormController::class, 'updateTeam'])->name('clients.team.update');
+        Route::post('/pegawai/{pegawai}/approve', [\App\Http\Controllers\PegawaiController::class, 'approve'])->name('pegawai.approve');
+        Route::post('/pegawai/{pegawai}/reject', [\App\Http\Controllers\PegawaiController::class, 'reject'])->name('pegawai.reject');
     });
 
     // Forms and detail routes

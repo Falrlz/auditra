@@ -30,6 +30,7 @@ class DatabaseSeeder extends Seeder
                 [
                     'email' => $email,
                     'password' => Hash::make('password'),
+                    'is_active' => true,
                 ]
             );
         };
