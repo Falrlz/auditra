@@ -41,4 +41,9 @@ class Pegawai extends Model
                     ->withPivot('role')
                     ->withTimestamps();
     }
+
+    public function presensiPelatihans(): HasMany
+    {
+        return $this->hasMany(PresensiPelatihan::class, 'pegawai_id');
+    }
 }

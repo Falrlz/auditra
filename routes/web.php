@@ -37,6 +37,25 @@ Route::middleware('auth')->group(function () {
         Route::post('/presensi/izin-sakit/{pengajuan}/reject', [\App\Http\Controllers\PresensiController::class, 'rejectIzinSakit'])->name('presensi.izin-sakit.reject');
     });
 
+    // Pelatihan routes
+    Route::get('/pelatihan', [\App\Http\Controllers\PelatihanController::class, 'index'])->name('pelatihan.index');
+    Route::get('/pelatihan/scan', [\App\Http\Controllers\PelatihanController::class, 'showScanPage'])->name('pelatihan.scan');
+    Route::get('/pelatihan/{pelatihan}/presensi', [\App\Http\Controllers\PelatihanController::class, 'showPresensi'])->name('pelatihan.presensi');
+    Route::post('/pelatihan/{pelatihan}/presensi', [\App\Http\Controllers\PelatihanController::class, 'recordPresensi'])->name('pelatihan.record-presensi');
+
+    Route::middleware('role:admin')->group(function () {
+        Route::post('/pelatihan', [\App\Http\Controllers\PelatihanController::class, 'store'])->name('pelatihan.store');
+        Route::put('/pelatihan/{pelatihan}', [\App\Http\Controllers\PelatihanController::class, 'update'])->name('pelatihan.update');
+        Route::delete('/pelatihan/{pelatihan}', [\App\Http\Controllers\PelatihanController::class, 'destroy'])->name('pelatihan.destroy');
+        Route::post('/pelatihan/{pelatihan}/submit', [\App\Http\Controllers\PelatihanController::class, 'submit'])->name('pelatihan.submit');
+        Route::post('/pelatihan/{pelatihan}/finish', [\App\Http\Controllers\PelatihanController::class, 'finish'])->name('pelatihan.finish');
+    });
+
+    Route::middleware('role:partner')->group(function () {
+        Route::post('/pelatihan/{pelatihan}/approve', [\App\Http\Controllers\PelatihanController::class, 'approve'])->name('pelatihan.approve');
+        Route::post('/pelatihan/{pelatihan}/reject', [\App\Http\Controllers\PelatihanController::class, 'reject'])->name('pelatihan.reject');
+    });
+
     // Admin routes
     Route::middleware('role:admin')->group(function () {
         Route::post('/users', [\App\Http\Controllers\UserController::class, 'store'])->name('users.store');
