@@ -40,8 +40,8 @@ Route::middleware('auth')->group(function () {
     // Pelatihan routes
     Route::get('/pelatihan', [\App\Http\Controllers\PelatihanController::class, 'index'])->name('pelatihan.index');
     Route::get('/pelatihan/scan', [\App\Http\Controllers\PelatihanController::class, 'showScanPage'])->name('pelatihan.scan');
-    Route::get('/pelatihan/{pelatihan}/presensi', [\App\Http\Controllers\PelatihanController::class, 'showPresensi'])->name('pelatihan.presensi');
-    Route::post('/pelatihan/{pelatihan}/presensi', [\App\Http\Controllers\PelatihanController::class, 'recordPresensi'])->name('pelatihan.record-presensi');
+    Route::get('/pelatihan/presensi/{token}', [\App\Http\Controllers\PelatihanController::class, 'showPresensiByToken'])->name('pelatihan.presensi');
+    Route::post('/pelatihan/presensi/{token}', [\App\Http\Controllers\PelatihanController::class, 'recordPresensiByToken'])->name('pelatihan.record-presensi');
 
     Route::middleware('role:admin')->group(function () {
         Route::post('/pelatihan', [\App\Http\Controllers\PelatihanController::class, 'store'])->name('pelatihan.store');

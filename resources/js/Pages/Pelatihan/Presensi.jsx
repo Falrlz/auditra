@@ -69,10 +69,17 @@ export default function Presensi({
 
     const handlePresensi = () => {
         setSubmitting(true);
-        router.post(route('pelatihan.record-presensi', pelatihan.id), {}, {
+        router.post(route('pelatihan.record-presensi', pelatihan.presence_token), {}, {
             onFinish: () => setSubmitting(false)
         });
     };
+
+    // Auto submit presence if training is active and not already recorded
+    useEffect(() => {
+        if (isOpen && !alreadyRecorded) {
+            handlePresensi();
+        }
+    }, [isOpen, alreadyRecorded]);
 
     const formatDate = (dateStr) => {
         const d = new Date(dateStr);

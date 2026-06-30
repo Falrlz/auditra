@@ -128,24 +128,21 @@ export default function Scan({ auth }) {
     const handleRedirect = (scannedText) => {
         let targetUrl = scannedText.trim();
 
-        // 1. If scannedText is just a number (ID), redirect to /pelatihan/{id}/presensi
-        if (/^\d+$/.test(targetUrl)) {
+        // 1. If scannedText is just a 32-char alphanumeric token
+        if (/^[a-zA-Z0-9]{32}$/.test(targetUrl)) {
             router.visit(route('pelatihan.presensi', targetUrl));
             return;
         }
 
-        // 2. If scannedText is a full URL containing the path, check and redirect
-        try {
-            if (targetUrl.startsWith('http://') || targetUrl.startsWith('https://') || targetUrl.includes('/pelatihan/')) {
-                // Visit directly if it is on the same domain or starts with path
-                router.visit(targetUrl);
-                return;
-            }
-        } catch (e) {
-            console.error(e);
+        // 2. If scannedText contains the presence token URL pattern (e.g. /pelatihan/presensi/a8f3...)
+        const match = targetUrl.match(/\/pelatihan\/presensi\/([a-zA-Z0-9]{32})/);
+        if (match) {
+            const token = match[1];
+            router.visit(route('pelatihan.presensi', token));
+            return;
         }
 
-        setScanError('Format QR Code tidak valid. Harap pindai QR Code presensi pelatihan Auditra.');
+        setScanError('Format QR Code atau Tautan tidak valid. Harap gunakan tautan presensi pelatihan Auditra yang benar.');
     };
 
     const handlePasteSubmit = (e) => {

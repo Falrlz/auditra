@@ -23,7 +23,16 @@ class Pelatihan extends Model
         'created_by',
         'approved_by',
         'reject_reason',
+        'presence_token',
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+        static::creating(function ($model) {
+            $model->presence_token = \Illuminate\Support\Str::random(32);
+        });
+    }
 
     protected $casts = [
         'mulai' => 'datetime',

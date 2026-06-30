@@ -159,8 +159,8 @@ export default function Index({
         setShowDetailModal(true);
     };
 
-    const getPresensiLink = (id) => {
-        return window.location.origin + `/pelatihan/${id}/presensi`;
+    const getPresensiLink = (token) => {
+        return window.location.origin + `/pelatihan/presensi/${token}`;
     };
 
     const copyToClipboard = (text) => {
@@ -664,16 +664,21 @@ export default function Index({
                                                 </div>
 
                                                 {!p.has_presensi && (
-                                                    <a
-                                                        href={route('pelatihan.presensi', p.id)}
-                                                        className={`font-bold px-5 py-2.5 rounded-xl shadow-sm text-xs transition duration-300 ${
-                                                            isOpen
-                                                                ? 'bg-[#0071e3] text-white hover:bg-blue-600 shadow-blue-500/10'
-                                                                : 'bg-neutral-100 text-neutral-400 cursor-not-allowed border border-neutral-200'
-                                                        }`}
-                                                    >
-                                                        Isi Presensi
-                                                    </a>
+                                                    isOpen ? (
+                                                        <a
+                                                            href={route('pelatihan.scan')}
+                                                            className="font-bold px-5 py-2.5 rounded-xl shadow-sm text-xs transition duration-300 bg-[#0071e3] text-white hover:bg-blue-600 shadow-blue-500/10"
+                                                        >
+                                                            Isi Presensi
+                                                        </a>
+                                                    ) : (
+                                                        <button
+                                                            disabled
+                                                            className="font-bold px-5 py-2.5 rounded-xl shadow-sm text-xs bg-neutral-100 text-neutral-400 cursor-not-allowed border border-neutral-200"
+                                                        >
+                                                            Isi Presensi
+                                                        </button>
+                                                    )
                                                 )}
                                             </div>
                                         </div>
@@ -878,7 +883,7 @@ export default function Index({
                             
                             <div className="p-3 bg-white border border-neutral-100 rounded-2xl shadow-inner mt-2">
                                 <img
-                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(getPresensiLink(selectedPelatihan.id))}`}
+                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(getPresensiLink(selectedPelatihan.presence_token))}`}
                                     alt="Pelatihan QR Code"
                                     className="w-[200px] h-[200px]"
                                 />
@@ -886,7 +891,7 @@ export default function Index({
 
                             <div className="w-full space-y-2 mt-4">
                                 <button
-                                    onClick={() => copyToClipboard(getPresensiLink(selectedPelatihan.id))}
+                                    onClick={() => copyToClipboard(getPresensiLink(selectedPelatihan.presence_token))}
                                     className="w-full flex items-center justify-center gap-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-bold py-2.5 px-4 rounded-xl text-xs transition"
                                 >
                                     Salin Link Presensi

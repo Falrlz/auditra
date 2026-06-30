@@ -147,7 +147,7 @@ test('employee can record presence within training time window', function () {
     // Test during training hours
     Carbon::setTestNow(Carbon::parse('2026-06-30 10:00:00', 'Asia/Jakarta'));
 
-    $response = $this->actingAs($staff)->post(route('pelatihan.record-presensi', $pelatihan->id));
+    $response = $this->actingAs($staff)->post(route('pelatihan.record-presensi', $pelatihan->presence_token));
 
     $response->assertSessionHasNoErrors();
     
@@ -177,12 +177,12 @@ test('employee cannot record presence outside training time window', function ()
 
     // Test before starting time
     Carbon::setTestNow(Carbon::parse('2026-06-30 08:30:00', 'Asia/Jakarta'));
-    $response = $this->actingAs($staff)->post(route('pelatihan.record-presensi', $pelatihan->id));
+    $response = $this->actingAs($staff)->post(route('pelatihan.record-presensi', $pelatihan->presence_token));
     $response->assertSessionHasErrors(['error']);
 
     // Test after ending time
     Carbon::setTestNow(Carbon::parse('2026-06-30 12:30:00', 'Asia/Jakarta'));
-    $response = $this->actingAs($staff)->post(route('pelatihan.record-presensi', $pelatihan->id));
+    $response = $this->actingAs($staff)->post(route('pelatihan.record-presensi', $pelatihan->presence_token));
     $response->assertSessionHasErrors(['error']);
 });
 

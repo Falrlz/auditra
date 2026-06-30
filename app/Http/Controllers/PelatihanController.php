@@ -280,8 +280,10 @@ class PelatihanController extends Controller
     /**
      * Show presence form for employee.
      */
-    public function showPresensi(Pelatihan $pelatihan)
+    public function showPresensiByToken($token)
     {
+        $pelatihan = Pelatihan::where('presence_token', $token)->firstOrFail();
+
         if ($pelatihan->status !== 'disetujui') {
             abort(403, 'Pendaftaran presensi tidak aktif untuk pelatihan ini.');
         }
@@ -305,8 +307,10 @@ class PelatihanController extends Controller
     /**
      * Record employee presence.
      */
-    public function recordPresensi(Request $request, Pelatihan $pelatihan)
+    public function recordPresensiByToken(Request $request, $token)
     {
+        $pelatihan = Pelatihan::where('presence_token', $token)->firstOrFail();
+
         if ($pelatihan->status !== 'disetujui') {
             return back()->withErrors(['error' => 'Pendaftaran presensi tidak aktif untuk pelatihan ini.']);
         }
