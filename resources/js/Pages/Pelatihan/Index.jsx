@@ -62,6 +62,15 @@ export default function Index({
     const [showDetailModal, setShowDetailModal] = useState(false);
     const [detailPelatihan, setDetailPelatihan] = useState(null);
 
+    // History Modal State (Admin/Partner to see employee's training history)
+    const [showHistoryModal, setShowHistoryModal] = useState(false);
+    const [selectedPegawaiHistory, setSelectedPegawaiHistory] = useState(null);
+
+    const handleViewHistory = (pegawai) => {
+        setSelectedPegawaiHistory(pegawai);
+        setShowHistoryModal(true);
+    };
+
     const handleCreate = () => {
         clearErrors();
         reset();
@@ -443,12 +452,13 @@ export default function Index({
                                                 <th className="px-6 py-4">Jabatan</th>
                                                 <th className="px-6 py-4 text-center">SKP Diperoleh</th>
                                                 <th className="px-6 py-4 text-center">Jumlah Pelatihan Diikuti</th>
+                                                <th className="px-6 py-4 text-right">Aksi</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-neutral-100">
                                             {pegawaiList.length === 0 ? (
                                                 <tr>
-                                                    <td colSpan="4" className="px-6 py-8 text-center text-neutral-400">
+                                                    <td colSpan="5" className="px-6 py-8 text-center text-neutral-400">
                                                         Tidak ada pegawai aktif.
                                                     </td>
                                                 </tr>
@@ -473,6 +483,14 @@ export default function Index({
                                                             </td>
                                                             <td className="px-6 py-4 text-center font-semibold text-neutral-700">
                                                                 {completedAttendances.length}
+                                                            </td>
+                                                            <td className="px-6 py-4 text-right">
+                                                                <button
+                                                                    onClick={() => handleViewHistory(p)}
+                                                                    className="text-xs font-bold text-[#0071e3] hover:text-white bg-blue-50 hover:bg-[#0071e3] px-3 py-1.5 rounded-xl transition border border-blue-100/50 shadow-sm"
+                                                                >
+                                                                    Lihat Histori
+                                                                </button>
                                                             </td>
                                                         </tr>
                                                     );
@@ -1032,6 +1050,105 @@ export default function Index({
                     </div>
                 </div>
             )}
+
+            {/* DETAIL HISTORI PELATIHAN PEGAWAI MODAL */}
+            {showHistoryModal && selectedPegawaiHistory && (() => {
+                const completedAttendances = selectedPegawaiHistory.presensi_pelatihans?.filter(
+                    ap => ap.status === 'hadir' && ap.pelatihan?.status === 'selesai'
+                ) || [];
+                const totalSkp = completedAttendances.reduce((acc, curr) => acc + (curr.pelatihan?.skp || 0), 0);
+                const totalPelatihan = selectedPegawaiHistory.presensi_pelatihans?.length || 0;
+
+                return (
+                    <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4">
+                        <div className="fixed inset-0 bg-neutral-900/40 backdrop-blur-sm transition-opacity" onClick={() => setShowHistoryModal(false)}></div>
+                        <div className="bg-white rounded-2xl overflow-hidden shadow-2xl border border-neutral-100 max-w-3xl w-full relative z-10 animate-fade-in-up">
+                            <div className="p-6 border-b border-neutral-100 flex items-center justify-between">
+                                <div>
+                                    <h3 className="text-lg font-bold text-neutral-800">Histori Pelatihan Pegawai</h3>
+                                    <p className="text-xs text-neutral-400 mt-1">
+                                        Memantau riwayat partisipasi pelatihan untuk <span className="font-semibold text-neutral-600">{selectedPegawaiHistory.name}</span> ({selectedPegawaiHistory.jabatan})
+                                    </p>
+                                </div>
+                                <button onClick={() => setShowHistoryModal(false)} className="text-neutral-400 hover:text-neutral-600 transition">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                            
+                            <div className="p-6 space-y-6">
+                                {/* STATS SUMMARY PILLS */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="bg-blue-50/50 border border-blue-100/50 rounded-2xl p-4 flex flex-col items-center justify-center text-center">
+                                        <span className="text-2xl font-black text-[#0071e3]">{totalSkp}</span>
+                                        <span className="text-[10px] font-bold text-blue-500 tracking-wider uppercase mt-1">Total SKP Diperoleh</span>
+                                    </div>
+                                    <div className="bg-neutral-50 border border-neutral-100 rounded-2xl p-4 flex flex-col items-center justify-center text-center">
+                                        <span className="text-2xl font-black text-neutral-700">{totalPelatihan}</span>
+                                        <span className="text-[10px] font-bold text-neutral-500 tracking-wider uppercase mt-1">Pelatihan Diikuti</span>
+                                    </div>
+                                </div>
+
+                                {/* HISTORY TABLE */}
+                                <div className="max-h-[300px] overflow-y-auto border border-neutral-100 rounded-xl">
+                                    <table className="w-full text-sm text-left text-neutral-600">
+                                        <thead className="text-xs text-neutral-500 bg-neutral-50 border-b border-neutral-100 font-bold uppercase tracking-wider sticky top-0">
+                                            <tr>
+                                                <th className="px-4 py-3">Nama Kegiatan</th>
+                                                <th className="px-4 py-3">Tanggal Pelaksanaan</th>
+                                                <th className="px-4 py-3 text-center">Status</th>
+                                                <th className="px-4 py-3 text-center">Poin SKP</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-neutral-100 text-xs">
+                                            {(!selectedPegawaiHistory.presensi_pelatihans || selectedPegawaiHistory.presensi_pelatihans.length === 0) ? (
+                                                <tr>
+                                                    <td colSpan="4" className="px-4 py-8 text-center text-neutral-400">
+                                                        Pegawai ini belum memiliki riwayat keikutsertaan pelatihan.
+                                                    </td>
+                                                </tr>
+                                            ) : (
+                                                selectedPegawaiHistory.presensi_pelatihans.map((presensi) => (
+                                                    <tr key={presensi.id} className="hover:bg-neutral-50/50 transition duration-150">
+                                                        <td className="px-4 py-3 font-semibold text-neutral-800">
+                                                            {presensi.pelatihan?.kegiatan || '-'}
+                                                        </td>
+                                                        <td className="px-4 py-3 text-neutral-500">
+                                                            {presensi.pelatihan?.mulai ? formatDate(presensi.pelatihan.mulai) : '-'}
+                                                        </td>
+                                                        <td className="px-4 py-3 text-center">
+                                                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold capitalize border ${
+                                                                presensi.status === 'hadir' 
+                                                                    ? 'bg-emerald-50 text-emerald-800 border-emerald-100' 
+                                                                    : 'bg-rose-50 text-rose-800 border-rose-100'
+                                                            }`}>
+                                                                {presensi.status}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-4 py-3 text-center font-bold text-[#0071e3]">
+                                                            {presensi.status === 'hadir' && presensi.pelatihan?.status === 'selesai' ? presensi.pelatihan.skp : 0}
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div className="p-6 border-t border-neutral-100 flex justify-end">
+                                <button
+                                    onClick={() => setShowHistoryModal(false)}
+                                    className="bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-bold py-2 px-5 rounded-xl text-xs transition"
+                                >
+                                    Tutup
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
         </AuthenticatedLayout>
     );
 }

@@ -242,3 +242,33 @@ test('employee can render scan page successfully', function () {
 
     $response->assertStatus(200);
 });
+
+test('admin can see pegawai list with training history in index', function () {
+    $adminPegawai = Pegawai::factory()->create(['jabatan' => 'admin']);
+    $admin = User::factory()->create(['pegawai_id' => $adminPegawai->id]);
+
+    $staffPegawai = Pegawai::factory()->create(['jabatan' => 'staff', 'status' => 'aktif']);
+    $pelatihan = Pelatihan::create([
+        'kegiatan' => 'Pelatihan Khusus',
+        'skp' => 3,
+        'mulai' => Carbon::now()->subHours(2),
+        'akhir' => Carbon::now()->addHours(1),
+        'status' => 'selesai',
+        'created_by' => $adminPegawai->id,
+    ]);
+
+    PresensiPelatihan::create([
+        'pegawai_id' => $staffPegawai->id,
+        'pelatihan_id' => $pelatihan->id,
+        'tanggal' => Carbon::now()->toDateString(),
+        'status' => 'hadir',
+    ]);
+
+    $response = $this->actingAs($admin)->get(route('pelatihan.index'));
+
+    $response->assertStatus(200);
+    $response->assertInertia(fn ($page) => $page
+        ->component('Pelatihan/Index')
+        ->has('pegawaiList')
+    );
+});

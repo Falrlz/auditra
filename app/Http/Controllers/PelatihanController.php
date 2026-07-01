@@ -79,6 +79,7 @@ class PelatihanController extends Controller
             // Also send active pegawai for listing/history reporting
             $props['pegawaiList'] = Pegawai::where('status', 'aktif')
                 ->whereIn('jabatan', ['staff', 'manager'])
+                ->with(['presensiPelatihans.pelatihan'])
                 ->orderBy('name', 'asc')
                 ->get();
         }
