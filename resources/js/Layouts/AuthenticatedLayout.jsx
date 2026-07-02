@@ -14,7 +14,8 @@ export default function AuthenticatedLayout({ header, children }) {
 
     const pageUrl = usePage().url;
     const hasUsersQuery = pageUrl.includes('tab=users');
-    const isPresensiActive = pageUrl.includes('/presensi');
+    const isPresensiActive = pageUrl.includes('/presensi') && !pageUrl.includes('/pelatihan');
+    const isPelatihanActive = pageUrl.includes('/pelatihan');
 
     const toggleSidebar = () => {
         setIsSidebarCollapsed((prev) => {
@@ -28,8 +29,7 @@ export default function AuthenticatedLayout({ header, children }) {
     const [openGroups, setOpenGroups] = useState(() => {
         return {
             sdm: hasUsersQuery || isPresensiActive,
-            pegawai: hasUsersQuery,
-            pelatihan: false
+            pelatihan: isPelatihanActive
         };
     });
 
@@ -124,6 +124,18 @@ export default function AuthenticatedLayout({ header, children }) {
                     )
                 },
                 {
+                    type: 'item',
+                    name: 'Data Pegawai',
+                    roles: ['admin', 'partner'],
+                    href: route('dashboard') + '?tab=users',
+                    active: route().current('dashboard') && hasUsersQuery,
+                    icon: (
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
+                        </svg>
+                    )
+                },
+                {
                     type: 'placeholder',
                     name: 'KPI',
                     featureName: 'KPI Pegawai',
@@ -132,30 +144,6 @@ export default function AuthenticatedLayout({ header, children }) {
                             <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v5.75c0 .621-.504 1.125-1.125 1.125h-2.25A1.125 1.125 0 0 1 3 18.875v-5.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v10.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v14.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />
                         </svg>
                     )
-                },
-                {
-                    type: 'subgroup',
-                    id: 'pegawai',
-                    name: 'Pegawai',
-                    roles: ['admin', 'partner'],
-                    icon: (
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
-                        </svg>
-                    ),
-                    children: [
-                        {
-                            type: 'item',
-                            name: 'Data Pegawai',
-                            href: route('dashboard') + '?tab=users',
-                            active: route().current('dashboard') && hasUsersQuery,
-                            icon: (
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75c.9 0 1.625.725 1.625 1.625v1.75c0 .9-.725 1.625-1.625 1.625H5.625C4.725 9.5 4 8.775 4 7.875v-1.75c0-.9.725-1.625 1.625-1.625Z" />
-                                </svg>
-                            )
-                        }
-                    ]
                 },
                 {
                     type: 'placeholder',
@@ -180,14 +168,39 @@ export default function AuthenticatedLayout({ header, children }) {
             ),
             children: [
                 {
-                    type: 'placeholder',
+                    type: 'item',
                     name: 'Presensi',
-                    featureName: 'Presensi Pelatihan',
+                    href: route('pelatihan.scan'),
+                    active: pageUrl.includes('/pelatihan/scan') || (pageUrl.includes('/pelatihan') && pageUrl.includes('/presensi')),
                     icon: (
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M10.125 2.25h3.75a.75.75 0 0 1 .75.75v18.75a.75.75 0 0 1-.75.75h-3.75a.75.75 0 0 1-.75-.75V3a.75.75 0 0 1 .75-.75Z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M19.125 6.75H21a.75.75 0 0 1 .75.75v14.25a.75.75 0 0 1-.75.75h-1.875a.75.75 0 0 1-.75-.75V7.5a.75.75 0 0 1 .75-.75Z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M3 11.25h1.875a.75.75 0 0 1 .75.75v9.75A.75.75 0 0 1 4.875 22.5H3a.75.75 0 0 1-.75-.75V12a.75.75 0 0 1 .75-.75Z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.375M9 18h3.375m-6.75 3h12a3 3 0 0 0 3-3V6a3 3 0 0 0-3-3H5.25A3 3 0 0 0 2.25 6v12a3 3 0 0 0 3 3Z" />
+                        </svg>
+                    )
+                },
+                {
+                    type: 'item',
+                    name: 'Kegiatan',
+                    href: route('pelatihan.index', { tab: 'tersedia' }),
+                    active: pageUrl.includes('/pelatihan') && !pageUrl.includes('/scan') && !pageUrl.includes('/presensi') && !pageUrl.includes('tab=riwayat') && !pageUrl.includes('tab=riwayat_saya') && !pageUrl.includes('tab=rekap_admin'),
+                    icon: (
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h12.75A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h12.75A2.25 2.25 0 0 1 21 11.25v7.5" />
+                        </svg>
+                    )
+                },
+                {
+                    type: 'item',
+                    name: 'Rekap',
+                    href: user?.role === 'admin'
+                        ? route('pelatihan.index', { tab: 'rekap_admin' })
+                        : (user?.role === 'partner'
+                            ? route('pelatihan.index', { tab: 'riwayat' })
+                            : route('pelatihan.index', { tab: 'riwayat_saya' })),
+                    active: pageUrl.includes('/pelatihan') && (pageUrl.includes('tab=rekap_admin') || pageUrl.includes('tab=riwayat') || pageUrl.includes('tab=riwayat_saya')),
+                    icon: (
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 0 1 3 3h-15a3 3 0 0 1 3-3m9 0v-3.75m-9 3.75v-3.75" />
                         </svg>
                     )
                 }
